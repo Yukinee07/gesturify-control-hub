@@ -98,3 +98,26 @@ button, a {
 .stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
 .stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
 .stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
+
+/* Glow effect for feature boxes */
+@keyframes borderGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.7), 0 0 20px rgba(217, 70, 239, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+  }
+}
+
+.feature-box {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.feature-box:hover {
+  animation: borderGlow 2s ease-in-out infinite;
+  border-color: rgba(139, 92, 246, 0.6);
+}

@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import Navigation from "@/components/Navigation";
 import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
+import Logo from "@/components/Logo";
 import { 
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
   Volume2, VolumeX, Chrome, MessageSquare, Camera,
@@ -313,7 +314,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden relative">
-      {/* Custom cursor gradient */}
+      {/* Custom cursor gradient - always visible */}
       <div 
         ref={cursorRef} 
         className="fixed pointer-events-none w-64 h-64 rounded-full bg-gradient-radial from-neon-purple/30 to-transparent -translate-x-1/2 -translate-y-1/2 z-0 blur-lg"
@@ -321,10 +322,6 @@ const Index = () => {
 
       {/* Hero Section */}
       <div className="relative min-h-screen flex flex-col">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-radial from-purple-900/20 to-transparent"></div>
-        </div>
-
         <Navigation scrollToPricing={scrollToPricing} />
 
         <div className="flex-1 flex flex-col items-center justify-center px-4 z-10">
@@ -363,21 +360,19 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Gesture Control Sections */}
+      {/* Gesture Control Sections with consistent spacing and glow effect */}
       {gestureSections.map((section, index) => (
         <div 
           key={section.id}
-          className={`min-h-screen flex items-center justify-center relative ${
-            index % 2 === 0 ? 'bg-black' : 'bg-black/90'
-          } scroll-mt-16`}
+          className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16 py-24 px-4"
           id={section.id}
         >
           <div 
-            className={`container mx-auto px-4 py-24 flex flex-col md:flex-row items-center ${
+            className={`container mx-auto flex flex-col md:flex-row items-center ${
               index % 2 !== 0 ? 'md:flex-row-reverse' : ''
-            }`}
+            } gap-16`}
           >
-            <div className="w-full md:w-1/2 mb-10 md:mb-0 flex flex-col items-center md:items-start">
+            <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
               <div className="mb-6 transform hover:scale-110 transition-transform duration-300">{section.icon}</div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">{section.title}</h2>
               <p className="text-xl text-gray-300 mb-8 text-center md:text-left">{section.description}</p>
@@ -399,14 +394,14 @@ const Index = () => {
             </div>
             <div className="w-full md:w-1/2 flex justify-center">
               <div 
-                className={`glass-morphism rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${
+                className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${
                   section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''
                 }`}
               >
                 <div className="text-center p-8 w-full">
                   <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
                   {permissionGranted && activeVideoId === section.id ? (
-                    <div className="relative animate-fade-in">
+                    <div className="relative zoom-in">
                       <video 
                         ref={videoRef}
                         className="w-full h-48 object-cover rounded-lg mb-3"
@@ -443,10 +438,10 @@ const Index = () => {
       {/* Custom Gesture Tool Section */}
       <div 
         id="custom-gestures"
-        className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16"
+        className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16 py-24 px-4"
       >
-        <div className="container mx-auto px-4 py-24 flex flex-col md:flex-row items-center">
-          <div className="w-full md:w-1/2 mb-10 md:mb-0 flex flex-col items-center md:items-start">
+        <div className="container mx-auto flex flex-col md:flex-row items-center gap-16">
+          <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
             <div className="mb-6 transform hover:scale-110 transition-transform duration-300">
               <Settings className="w-12 h-12 text-neon-purple" />
             </div>
@@ -462,7 +457,7 @@ const Index = () => {
             </Button>
           </div>
           <div className="w-full md:w-1/2 flex justify-center">
-            <div className="glass-morphism rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300">
+            <div className="feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300">
               <div className="text-center p-8">
                 <h3 className="text-xl font-semibold mb-4">Custom Gesture Creator</h3>
                 <p className="text-gray-400">
@@ -483,9 +478,9 @@ const Index = () => {
       <div 
         id="pricing" 
         ref={pricingSectionRef}
-        className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16"
+        className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16 py-24 px-4"
       >
-        <div className="container mx-auto px-4 py-24">
+        <div className="container mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6 text-gradient glow">Pricing Plans</h2>
             <p className="text-xl text-gray-300">
@@ -497,7 +492,7 @@ const Index = () => {
             {pricingPlans.map((plan, index) => (
               <div 
                 key={index}
-                className={`glass-morphism rounded-xl p-8 flex flex-col h-full transition-all duration-300 hover:scale-105 ${
+                className={`feature-box neo-blur rounded-xl p-8 flex flex-col h-full transition-all duration-300 hover:scale-105 ${
                   plan.recommended ? 'border-neon-purple ring-2 ring-neon-purple/50 relative' : ''
                 }`}
               >
@@ -563,15 +558,7 @@ const Index = () => {
       <footer className="bg-black py-12 border-t border-white/5">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-6 md:mb-0">
-              <svg viewBox="0 0 24 24" className="w-8 h-8 text-neon-purple">
-                <path
-                  fill="currentColor"
-                  d="M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z"
-                />
-              </svg>
-              <span className="text-xl font-bold text-gradient-purple">GestureFlow</span>
-            </div>
+            <Logo className="mb-6 md:mb-0" />
             <div className="text-sm text-gray-500">
               © {new Date().getFullYear()} GestureFlow. All rights reserved.
             </div>
@@ -583,47 +570,6 @@ const Index = () => {
       <style>{`
         :root {
           --brightness: ${currentBrightness};
-        }
-        
-        /* Smooth scrolling for the entire page */
-        html {
-          scroll-behavior: smooth;
-        }
-
-        /* Hover animation for interactive elements */
-        .hover-scale {
-          transition: transform 0.3s ease;
-        }
-        
-        .hover-scale:hover {
-          transform: scale(1.05);
-        }
-
-        /* Animation for active gestures */
-        .gesture-active {
-          animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-          0% {
-            box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.7);
-          }
-          70% {
-            box-shadow: 0 0 0 10px rgba(155, 89, 182, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(155, 89, 182, 0);
-          }
-        }
-        
-        /* Fade in animation for video element */
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-out forwards;
         }
       `}</style>
     </div>
