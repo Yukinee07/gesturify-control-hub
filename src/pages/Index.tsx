@@ -7,7 +7,6 @@ import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle } from "lucide-react";
-
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
@@ -268,34 +267,32 @@ const Index = () => {
   };
 
   // Pricing plans data
-  const pricingPlans = [
-    {
-      name: "Free",
-      price: "$0",
-      description: "Basic gesture controls for personal use",
-      features: ["5 built-in gestures", "Basic brightness and volume control", "Chrome browser integration", "Community support"],
-      buttonText: "Get Started",
-      buttonVariant: "outline",
-      recommended: false
-    }, {
-      name: "Pro",
-      price: "$9.99",
-      period: "monthly",
-      description: "Advanced controls for power users",
-      features: ["Everything in Free", "Custom gesture creation", "Advanced application control", "Priority support", "Multiple device profiles"],
-      buttonText: "Upgrade Now",
-      buttonVariant: "default",
-      recommended: true
-    }, {
-      name: "Enterprise",
-      price: "Contact Us",
-      description: "Custom solutions for organizations",
-      features: ["Everything in Pro", "Custom integration development", "Team management", "Dedicated account manager", "Training sessions"],
-      buttonText: "Contact Sales",
-      buttonVariant: "outline",
-      recommended: false
-    }
-  ];
+  const pricingPlans = [{
+    name: "Free",
+    price: "$0",
+    description: "Basic gesture controls for personal use",
+    features: ["5 built-in gestures", "Basic brightness and volume control", "Chrome browser integration", "Community support"],
+    buttonText: "Get Started",
+    buttonVariant: "outline",
+    recommended: false
+  }, {
+    name: "Pro",
+    price: "$9.99",
+    period: "monthly",
+    description: "Advanced controls for power users",
+    features: ["Everything in Free", "Custom gesture creation", "Advanced application control", "Priority support", "Multiple device profiles"],
+    buttonText: "Upgrade Now",
+    buttonVariant: "default",
+    recommended: true
+  }, {
+    name: "Enterprise",
+    price: "Contact Us",
+    description: "Custom solutions for organizations",
+    features: ["Everything in Pro", "Custom integration development", "Team management", "Dedicated account manager", "Training sessions"],
+    buttonText: "Contact Sales",
+    buttonVariant: "outline",
+    recommended: false
+  }];
   return <div className="min-h-screen bg-black text-white overflow-x-hidden relative">
       {/* Custom cursor gradient - always visible */}
       <div ref={cursorRef} className="fixed pointer-events-none w-64 h-64 rounded-full bg-gradient-radial from-neon-purple/30 to-transparent -translate-x-1/2 -translate-y-1/2 z-0 blur-lg" />
@@ -396,11 +393,7 @@ const Index = () => {
                 <Button onClick={handleCustomGestureTool} className="bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300">
                   Try Now
                 </Button>
-                <a 
-                  href="#pricing" 
-                  onClick={scrollToPricing} 
-                  className="inline-flex items-center text-neon-purple hover:text-neon-pink transition-colors"
-                >
+                <a href="#pricing" onClick={scrollToPricing} className="inline-flex items-center text-neon-purple hover:text-neon-pink transition-colors">
                   View more &rarr;
                 </a>
               </div>
@@ -428,7 +421,7 @@ const Index = () => {
       <div id="pricing" ref={pricingSectionRef} className="min-h-screen flex items-center justify-center relative scroll-mt-16 py-24 px-4 md:px-8 bg-transparent">
         <div className="container mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-gradient glow">Pricing Plans</h2>
+            <h2 className="text-3xl font-bold mb-6 text-gradient glow my-0 py-[7px] md:text-5xl">Pricing Plans</h2>
             <p className="text-xl text-gray-300">
               Choose the plan that suits your needs and unlock the full potential of gesture controls
             </p>
