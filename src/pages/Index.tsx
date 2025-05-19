@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,22 +8,28 @@ import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-  Volume2, VolumeX, Chrome, LayoutDashboard, Camera, HandMetal, PanelLeft, Minimize, Settings
+  Volume2, VolumeX, Chrome, HandMetal, Camera, 
+  Minimize, Settings, Hand
 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
+  const [activeGestureSection, setActiveGestureSection] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
   const [gestureStatus, setGestureStatus] = useState<{[key: string]: string}>({});
+  const [gestureProgress, setGestureProgress] = useState<{[key: string]: number}>({});
   const [currentBrightness, setCurrentBrightness] = useState(1);
   const [currentVolume, setCurrentVolume] = useState(0.5);
+  const [isGestureDialogOpen, setIsGestureDialogOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const cursorRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRefs = useRef<{[key: string]: HTMLVideoElement | null}>({});
 
   // Track mouse movement for cursor gradient effect
   useEffect(() => {
@@ -55,18 +62,9 @@ const Index = () => {
   // Stop gesture detection when component unmounts
   useEffect(() => {
     return () => {
-      if (permissionGranted) {
-        gestureDetection.stop();
-      }
+      gestureDetection.stop();
     };
-  }, [permissionGranted]);
-
-  // Update video stream if permission granted
-  useEffect(() => {
-    if (permissionGranted && videoRef.current && gestureDetection.stream) {
-      videoRef.current.srcObject = gestureDetection.stream;
-    }
-  }, [permissionGranted]);
+  }, []);
 
   // Handle gesture detection
   const handleGestureDetected = (gesture: GestureType) => {
@@ -122,18 +120,18 @@ const Index = () => {
           description: `Volume set to ${Math.round(newVolumeDown * 100)}%`,
         });
         break;
-      case 'clap':
+      case 'peace':
         gestureDetection.openChrome();
-        statusUpdate = "Opening Chrome browser";
+        statusUpdate = "Peace sign detected - opening Chrome browser";
         setGestureStatus(prev => ({...prev, openChrome: statusUpdate}));
         toast({
           title: "Opening Chrome",
           description: "Launching Chrome browser",
         });
         break;
-      case 'peace':
+      case 'clap':
         gestureDetection.closeWindow();
-        statusUpdate = "Peace sign detected - would close window";
+        statusUpdate = "Clap gesture detected - would close window";
         setGestureStatus(prev => ({...prev, closeWindow: statusUpdate}));
         toast({
           title: "Window Close Gesture",
@@ -160,18 +158,64 @@ const Index = () => {
     }, 2000);
   };
 
-  const requestCameraPermission = async () => {
-    try {
-      await gestureDetection.requestPermission();
-      setPermissionGranted(true);
-      toast({
-        title: "Camera access granted",
-        description: "You can now try the gesture controls.",
-      });
+  const handleGestureProgress = (gesture: GestureType, progress: number) => {
+    // Map the gesture to the corresponding section
+    let sectionId = "";
+    switch (gesture) {
+      case 'slideUp':
+      case 'slideDown':
+        sectionId = "brightness";
+        break;
+      case 'slideLeft':
+      case 'slideRight':
+        sectionId = "volume";
+        break;
+      case 'peace':
+        sectionId = "openChrome";
+        break;
+      case 'clap':
+        sectionId = "closeWindow";
+        break;
+      case 'pinch':
+        sectionId = "screenshot";
+        break;
+      default:
+        return;
+    }
+    
+    // Update progress for this section
+    setGestureProgress(prev => ({...prev, [sectionId]: progress}));
+    
+    // Update status message
+    const action = {
+      'slideUp': 'Increasing brightness',
+      'slideDown': 'Decreasing brightness',
+      'slideLeft': 'Decreasing volume',
+      'slideRight': 'Increasing volume',
+      'peace': 'Detecting peace sign',
+      'clap': 'Detecting clap',
+      'pinch': 'Detecting pinch'
+    }[gesture];
+    
+    setGestureStatus(prev => ({
+      ...prev, 
+      [sectionId]: `${action} - ${Math.round(progress * 100)}% complete`
+    }));
+  };
 
+  const requestCameraPermission = async (sectionId: string) => {
+    try {
+      // If we're already active in another section, stop that one
+      if (activeGestureSection && activeGestureSection !== sectionId) {
+        gestureDetection.stop();
+      }
+      
+      setActiveGestureSection(sectionId);
+      
       // Start gesture detection with callback
       gestureDetection.start({
         onGestureDetected: handleGestureDetected,
+        onGestureProgress: handleGestureProgress,
         onError: (error) => {
           toast({
             variant: "destructive",
@@ -179,6 +223,12 @@ const Index = () => {
             description: error.message,
           });
         }
+      }, videoRefs.current[sectionId] || undefined);
+      
+      setPermissionGranted(true);
+      toast({
+        title: "Camera access granted",
+        description: "You can now try the gesture controls.",
       });
     } catch (err) {
       toast({
@@ -195,47 +245,52 @@ const Index = () => {
       title: "Hand Slide Up/Down",
       description: "Control screen brightness with a simple hand movement.",
       icon: <ArrowUp className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('slideUp'),
+      gestureDemo: () => gestureDetection.simulateGestureDetection('slideUp', 1000, videoRefs.current.brightness || undefined),
       gestureType: ['slideUp', 'slideDown'],
       status: gestureStatus.brightness || "Waiting for gesture...",
-      value: currentBrightness
+      value: currentBrightness,
+      progress: gestureProgress.brightness || 0
     },
     {
       id: "volume",
       title: "Hand Slide Right/Left",
       description: "Increase or decrease volume with horizontal hand movements.",
       icon: <Volume2 className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('slideRight'),
+      gestureDemo: () => gestureDetection.simulateGestureDetection('slideRight', 1000, videoRefs.current.volume || undefined),
       gestureType: ['slideLeft', 'slideRight'],
       status: gestureStatus.volume || "Waiting for gesture...",
-      value: currentVolume
+      value: currentVolume,
+      progress: gestureProgress.volume || 0
     },
     {
       id: "openChrome",
-      title: "Hand Metal Gesture",
-      description: "Open Chrome browser with a hand metal gesture.",
-      icon: <HandMetal className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('clap'),
-      gestureType: ['clap'],
-      status: gestureStatus.openChrome || "Waiting for gesture..."
+      title: "Peace Gesture",
+      description: "Open Chrome browser with a peace sign.",
+      icon: <Hand className="w-12 h-12 text-neon-purple" />,
+      gestureDemo: () => gestureDetection.simulateGestureDetection('peace', 1000, videoRefs.current.openChrome || undefined),
+      gestureType: ['peace'],
+      status: gestureStatus.openChrome || "Waiting for gesture...",
+      progress: gestureProgress.openChrome || 0
     },
     {
       id: "closeWindow",
-      title: "Panel Left Gesture",
-      description: "Close the currently active window with a panel left gesture.",
-      icon: <PanelLeft className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('peace'),
-      gestureType: ['peace'],
-      status: gestureStatus.closeWindow || "Waiting for gesture..."
+      title: "Clap Gesture",
+      description: "Close the currently active window with a clap gesture.",
+      icon: <HandMetal className="w-12 h-12 text-neon-purple" />,
+      gestureDemo: () => gestureDetection.simulateGestureDetection('clap', 1000, videoRefs.current.closeWindow || undefined),
+      gestureType: ['clap'],
+      status: gestureStatus.closeWindow || "Waiting for gesture...",
+      progress: gestureProgress.closeWindow || 0
     },
     {
       id: "screenshot",
-      title: "Minimize Gesture",
-      description: "Take a screenshot with a minimizing gesture.",
+      title: "Pinch Gesture",
+      description: "Take a screenshot with a pinch gesture.",
       icon: <Minimize className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('pinch'),
+      gestureDemo: () => gestureDetection.simulateGestureDetection('pinch', 1000, videoRefs.current.screenshot || undefined),
       gestureType: ['pinch'],
-      status: gestureStatus.screenshot || "Waiting for gesture..."
+      status: gestureStatus.screenshot || "Waiting for gesture...",
+      progress: gestureProgress.screenshot || 0
     },
   ];
 
@@ -261,11 +316,6 @@ const Index = () => {
 
       {/* Hero Section */}
       <div className="relative min-h-screen flex flex-col">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-radial from-purple-900/20 to-transparent"></div>
-          <div className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent"></div>
-        </div>
-
         <Navigation />
 
         <div className="flex-1 flex flex-col items-center justify-center px-4 z-10">
@@ -305,27 +355,18 @@ const Index = () => {
       {gestureSections.map((section, index) => (
         <div 
           key={section.id}
-          className={`min-h-screen flex items-center justify-center relative ${
-            index % 2 === 0 ? 'bg-black' : 'bg-black/90'
-          } scroll-mt-16`}
+          className="min-h-screen flex items-center justify-center relative scroll-mt-16"
           id={section.id}
         >
-          <div 
-            className={`container mx-auto px-4 py-24 flex flex-col md:flex-row items-center ${
-              index % 2 !== 0 ? 'md:flex-row-reverse' : ''
-            }`}
-          >
-            <div className="w-full md:w-1/2 mb-10 md:mb-0 text-center md:text-left">
-              <div className="mb-6 transform hover:scale-110 transition-transform duration-300">{section.icon}</div>
+          <div className="container mx-auto px-4 py-24 flex flex-col items-center">
+            <div className="text-center max-w-3xl mb-16">
+              <div className="mb-6 transform hover:scale-110 transition-transform duration-300 flex justify-center">{section.icon}</div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient">{section.title}</h2>
               <p className="text-xl text-gray-300 mb-8">{section.description}</p>
               <Button 
                 onClick={() => {
-                  if (!permissionGranted) {
-                    requestCameraPermission();
-                  } else {
-                    section.gestureDemo();
-                  }
+                  requestCameraPermission(section.id);
+                  section.gestureDemo();
                 }}
                 className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${
                   section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple' : ''
@@ -334,44 +375,64 @@ const Index = () => {
                 Try This Gesture
               </Button>
             </div>
-            <div className="w-full md:w-1/2 flex justify-center">
+            
+            <div className="w-full max-w-3xl">
               <div 
-                className={`glass-morphism rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${
+                className={`glass-morphism rounded-xl w-full aspect-video flex items-center justify-center transition-all duration-500 ${
                   section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''
-                }`}
+                } ${activeGestureSection === section.id ? 'animate-fade-in' : ''}`}
               >
-                <div className="text-center p-8">
+                <div className="text-center p-8 w-full h-full flex flex-col">
                   <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
-                  {permissionGranted ? (
-                    <div className="relative">
-                      {section.id === 'brightness' && (
-                        <video 
-                          ref={videoRef}
-                          className="w-full h-48 object-cover rounded-lg mb-3"
-                          autoPlay
-                          playsInline
-                          muted
-                        />
-                      )}
-                      <div className="mb-3 text-white bg-black/50 p-2 rounded">
-                        <p className="font-mono text-sm">
-                          {section.status}
-                        </p>
-                      </div>
-                      {'value' in section && (
-                        <div className="w-full bg-gray-700 h-2 rounded-full mt-2">
-                          <div 
-                            className="bg-gradient-to-r from-neon-purple to-neon-pink h-full rounded-full"
-                            style={{ width: `${Math.round(section.value * 100)}%` }}
-                          ></div>
+                  <div className="relative flex-grow flex flex-col justify-center items-center">
+                    {activeGestureSection === section.id ? (
+                      <>
+                        <div className="relative w-full h-full">
+                          <video 
+                            ref={(el) => { videoRefs.current[section.id] = el }}
+                            className="w-full h-full object-cover rounded-lg mb-3"
+                            autoPlay
+                            playsInline
+                            muted
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 mb-3 text-white bg-black/70 p-2 rounded">
+                            <p className="font-mono text-sm">
+                              {section.status}
+                            </p>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400">
-                      Click 'Try This Gesture' to enable camera and test this gesture.
-                    </p>
-                  )}
+                        
+                        {/* Progress bar for gesture detection */}
+                        <div className="w-full mt-4">
+                          <div className="w-full bg-gray-700 h-2 rounded-full">
+                            <div 
+                              className="bg-gradient-to-r from-neon-purple to-neon-pink h-full rounded-full transition-all duration-300"
+                              style={{ width: `${Math.round(section.progress * 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        
+                        {/* Value indicator for brightness/volume */}
+                        {'value' in section && (
+                          <div className="w-full mt-2">
+                            <div className="w-full bg-gray-700 h-2 rounded-full">
+                              <div 
+                                className="bg-gradient-to-r from-neon-blue to-neon-purple h-full rounded-full"
+                                style={{ width: `${Math.round(section.value * 100)}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-xs text-right mt-1">
+                              {Math.round(section.value * 100)}%
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-400">
+                        Click 'Try This Gesture' to enable camera and test this gesture.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -384,9 +445,9 @@ const Index = () => {
         id="custom-gestures"
         className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16"
       >
-        <div className="container mx-auto px-4 py-24 flex flex-col md:flex-row items-center">
-          <div className="w-full md:w-1/2 mb-10 md:mb-0 text-center md:text-left">
-            <div className="mb-6 transform hover:scale-110 transition-transform duration-300">
+        <div className="container mx-auto px-4 py-24 flex flex-col items-center">
+          <div className="text-center max-w-3xl">
+            <div className="mb-6 transform hover:scale-110 transition-transform duration-300 flex justify-center">
               <Settings className="w-12 h-12 text-neon-purple" />
             </div>
             <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient">Create Your Own Gesture Tool</h2>
@@ -399,9 +460,8 @@ const Index = () => {
             >
               Try Now
             </Button>
-          </div>
-          <div className="w-full md:w-1/2 flex justify-center">
-            <div className="glass-morphism rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300">
+            
+            <div className="glass-morphism rounded-xl w-full max-w-3xl aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300 mt-16 mx-auto">
               <div className="text-center p-8">
                 <h3 className="text-xl font-semibold mb-4">Custom Gesture Creator</h3>
                 <p className="text-gray-400">
@@ -419,7 +479,7 @@ const Index = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-black py-20 px-4 relative">
+      <div className="py-20 px-4 relative">
         <div className="absolute inset-0 bg-gradient-radial from-purple-900/10 to-transparent opacity-60"></div>
         <div className="container mx-auto text-center relative z-10 max-w-3xl">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient glow">
@@ -444,7 +504,7 @@ const Index = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-black py-12 border-t border-white/5">
+      <footer className="py-12 border-t border-white/5">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-6 md:mb-0">
