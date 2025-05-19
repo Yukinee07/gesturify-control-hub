@@ -15,7 +15,6 @@ export type GestureType =
 interface GestureDetectionOptions {
   onGestureDetected?: (gesture: GestureType) => void;
   onError?: (error: Error) => void;
-  onGestureProgress?: (gesture: GestureType, progress: number) => void;
 }
 
 class GestureDetection {
@@ -27,9 +26,8 @@ class GestureDetection {
   private continuousGestureTimer: NodeJS.Timeout | null = null;
   private brightnessValue: number = 1.0;
   private volumeValue: number = 0.5;
-  private activeVideoElement: HTMLVideoElement | null = null;
 
-  async requestPermission(videoElement?: HTMLVideoElement): Promise<boolean> {
+  async requestPermission(): Promise<boolean> {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
@@ -37,12 +35,7 @@ class GestureDetection {
           height: { ideal: 720 }
         } 
       });
-      
-      if (videoElement && this.stream) {
-        videoElement.srcObject = this.stream;
-        this.activeVideoElement = videoElement;
-      }
-      
+      // In a real app, we would initialize the hand tracking library here
       return true;
     } catch (error) {
       console.error("Error accessing webcam:", error);
@@ -53,15 +46,18 @@ class GestureDetection {
     }
   }
 
-  async start(options: GestureDetectionOptions = {}, videoElement?: HTMLVideoElement) {
+  async start(options: GestureDetectionOptions = {}) {
     this.options = options;
     if (this.isRunning) return;
     
-    const hasPermission = await this.requestPermission(videoElement);
+    const hasPermission = await this.requestPermission();
     if (!hasPermission) return;
     
     this.isRunning = true;
     console.log("Gesture detection started");
+    
+    // In a real implementation, we would start the hand tracking here
+    // For now, we'll simulate gesture detection with a timeout
   }
 
   stop() {
@@ -82,25 +78,14 @@ class GestureDetection {
       this.continuousGestureTimer = null;
     }
     
-    if (this.activeVideoElement) {
-      this.activeVideoElement.srcObject = null;
-      this.activeVideoElement = null;
-    }
-    
     this.isRunning = false;
     this.lastGesture = 'none';
     console.log("Gesture detection stopped");
   }
 
   // This method simulates detecting a specific gesture for demo purposes
-  simulateGestureDetection(gesture: GestureType, delay = 1000, videoElement?: HTMLVideoElement) {
-    if (this.isRunning && this.activeVideoElement !== videoElement) {
-      this.stop();
-    }
-    
-    if (!this.isRunning) {
-      this.start(this.options, videoElement);
-    }
+  simulateGestureDetection(gesture: GestureType, delay = 2000) {
+    if (!this.isRunning) return;
     
     // Clear any existing simulation
     if (this.mockGestureTimeout) {
@@ -116,19 +101,8 @@ class GestureDetection {
     
     this.lastGesture = gesture;
     
-    // Simulate detecting gesture progress
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-      progress += 0.2;
-      if (this.options.onGestureProgress && progress <= 1) {
-        this.options.onGestureProgress(gesture, progress);
-      }
-    }, delay / 5);
-    
     // Simulate processing time
     this.mockGestureTimeout = setTimeout(() => {
-      clearInterval(progressInterval);
-      
       if (this.options.onGestureDetected) {
         this.options.onGestureDetected(gesture);
       }
@@ -221,7 +195,7 @@ class GestureDetection {
   closeWindow() {
     // In a real app, we would use system APIs to close the current window
     // For demo purposes, we'll simulate this with an alert
-    alert('Clap gesture detected. In a real app, this would close the current window.');
+    alert('Peace gesture detected. In a real app, this would close the current window.');
   }
 
   takeScreenshot() {
@@ -242,3 +216,4 @@ class GestureDetection {
 
 // Export a singleton instance
 export const gestureDetection = new GestureDetection();
+
