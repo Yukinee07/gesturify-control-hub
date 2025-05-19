@@ -8,8 +8,8 @@ import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-  Volume2, VolumeX, Chrome, Window, Screenshot,
-  Clap, Peace, Pinch, HandMetal, Settings
+  Volume2, VolumeX, Chrome, AppWindow, 
+  Clapper, Space, Pin, HandMetal, Settings
 } from "lucide-react";
 
 const Index = () => {
@@ -173,7 +173,7 @@ const Index = () => {
       id: "openChrome",
       title: "Clap",
       description: "Open Chrome browser with a simple clap gesture.",
-      icon: <Clap className="w-12 h-12 text-neon-purple" />,
+      icon: <Clapper className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('clap'),
       gestureType: ['clap']
     },
@@ -181,7 +181,7 @@ const Index = () => {
       id: "closeWindow",
       title: "Peace Sign",
       description: "Close the currently active window with a peace sign.",
-      icon: <Peace className="w-12 h-12 text-neon-purple" />,
+      icon: <Space className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('peace'),
       gestureType: ['peace']
     },
@@ -189,7 +189,7 @@ const Index = () => {
       id: "screenshot",
       title: "Pinch",
       description: "Take a screenshot with a pinching gesture.",
-      icon: <Pinch className="w-12 h-12 text-neon-purple" />,
+      icon: <Pin className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('pinch'),
       gestureType: ['pinch']
     },
@@ -420,7 +420,7 @@ const Index = () => {
       </footer>
 
       {/* Add global styles for the brightness filter */}
-      <style jsx="true">{`
+      <style>{`
         :root {
           --brightness: 1;
         }
