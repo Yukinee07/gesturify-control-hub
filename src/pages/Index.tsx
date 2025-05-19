@@ -8,21 +8,19 @@ import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-  Volume2, VolumeX, Chrome, AppWindow, 
-  Clapperboard, Space, Pin, HandMetal, Settings
+  Volume2, VolumeX, Chrome, Window, Screenshot,
+  Clap, Peace, Pinch, HandMetal, Settings
 } from "lucide-react";
 
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [currentBrightness, setCurrentBrightness] = useState(1);
-  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+  const [scrollY, setScrollY] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const cursorRef = useRef<HTMLDivElement>(null);
-  const videoRefs = useRef<{[key: string]: HTMLVideoElement | null}>({});
 
   // Track mouse movement for cursor gradient effect
   useEffect(() => {
@@ -32,6 +30,16 @@ const Index = () => {
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Track scroll position for gradient and parallax effects
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Animate cursor gradient
@@ -47,14 +55,9 @@ const Index = () => {
     return () => {
       if (permissionGranted) {
         gestureDetection.stop();
-        
-        // Clean up video streams
-        if (videoStream) {
-          videoStream.getTracks().forEach(track => track.stop());
-        }
       }
     };
-  }, [permissionGranted, videoStream]);
+  }, [permissionGranted]);
 
   // Handle gesture detection
   const handleGestureDetected = (gesture: GestureType) => {
@@ -65,7 +68,6 @@ const Index = () => {
     switch (gesture) {
       case 'slideUp':
         const brightnessUp = gestureDetection.adjustBrightness('up');
-        setCurrentBrightness(brightnessUp);
         toast({
           title: "Brightness Increased",
           description: `Brightness set to ${Math.round(brightnessUp * 100)}%`,
@@ -73,7 +75,6 @@ const Index = () => {
         break;
       case 'slideDown':
         const brightnessDown = gestureDetection.adjustBrightness('down');
-        setCurrentBrightness(brightnessDown);
         toast({
           title: "Brightness Decreased",
           description: `Brightness set to ${Math.round(brightnessDown * 100)}%`,
@@ -122,17 +123,10 @@ const Index = () => {
     }, 2000);
   };
 
-  const requestCameraPermission = async (sectionId: string) => {
+  const requestCameraPermission = async () => {
     try {
-      const stream = await gestureDetection.requestPermission();
+      await gestureDetection.requestPermission();
       setPermissionGranted(true);
-      setVideoStream(stream);
-      
-      // Display the stream in the video element
-      if (videoRefs.current[sectionId] && stream) {
-        videoRefs.current[sectionId].srcObject = stream;
-      }
-      
       toast({
         title: "Camera access granted",
         description: "You can now try the gesture controls.",
@@ -179,7 +173,7 @@ const Index = () => {
       id: "openChrome",
       title: "Clap",
       description: "Open Chrome browser with a simple clap gesture.",
-      icon: <Clapperboard className="w-12 h-12 text-neon-purple" />,
+      icon: <Clap className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('clap'),
       gestureType: ['clap']
     },
@@ -187,7 +181,7 @@ const Index = () => {
       id: "closeWindow",
       title: "Peace Sign",
       description: "Close the currently active window with a peace sign.",
-      icon: <Space className="w-12 h-12 text-neon-purple" />,
+      icon: <Peace className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('peace'),
       gestureType: ['peace']
     },
@@ -195,7 +189,7 @@ const Index = () => {
       id: "screenshot",
       title: "Pinch",
       description: "Take a screenshot with a pinching gesture.",
-      icon: <Pin className="w-12 h-12 text-neon-purple" />,
+      icon: <Pinch className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('pinch'),
       gestureType: ['pinch']
     },
@@ -219,12 +213,21 @@ const Index = () => {
       <div 
         ref={cursorRef} 
         className="fixed pointer-events-none w-64 h-64 rounded-full bg-gradient-radial from-neon-purple/30 to-transparent -translate-x-1/2 -translate-y-1/2 z-0 blur-lg"
+        style={{
+          opacity: Math.max(0, 1 - scrollY / 1000),
+        }}
       />
 
       {/* Hero Section */}
       <div className="relative min-h-screen flex flex-col">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-radial from-purple-900/20 to-transparent"></div>
+          <div 
+            className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent"
+            style={{ 
+              transform: `translateY(${scrollY * 0.1}px)` 
+            }}
+          ></div>
         </div>
 
         <Navigation />
@@ -263,134 +266,102 @@ const Index = () => {
       </div>
 
       {/* Gesture Control Sections */}
-      <div className="container mx-auto px-4 py-24">
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center text-gradient">
-          Explore Gesture Controls
-        </h2>
-        
-        <div className="max-w-4xl mx-auto space-y-16">
-          {gestureSections.map((section, index) => (
-            <div 
-              key={section.id}
-              className="gesture-section bg-black/40 border border-white/10 rounded-xl p-6 transition-all duration-300 hover:border-neon-purple/40"
-              id={section.id}
-            >
-              <div className="flex flex-col lg:flex-row items-center gap-8">
-                <div className="w-full lg:w-1/2 text-center lg:text-left">
-                  <div className="mb-6 transform transition-transform duration-300 hover:scale-110">{section.icon}</div>
-                  <h2 className="text-3xl font-bold mb-4 text-gradient">{section.title}</h2>
-                  <p className="text-lg text-gray-300 mb-6">{section.description}</p>
-                  <Button 
-                    onClick={() => {
-                      if (!permissionGranted) {
-                        requestCameraPermission(section.id);
-                      } else {
-                        section.gestureDemo();
-                      }
-                    }}
-                    className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${
-                      section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple' : ''
-                    }`}
-                  >
-                    Try This Gesture
-                  </Button>
-                </div>
-                
-                <div className="w-full lg:w-1/2">
-                  <div 
-                    className={`gesture-recognition-zone rounded-xl w-full aspect-video flex items-center justify-center transition-all duration-500 ${
-                      section.gestureType.includes(activeGesture as any) 
-                        ? 'ring-4 ring-neon-purple scale-105 border-neon-purple' 
-                        : 'border border-white/10'
-                    }`}
-                  >
-                    {permissionGranted ? (
-                      <>
-                        <video
-                          ref={el => videoRefs.current[section.id] = el}
-                          className="w-full h-full rounded-xl object-cover"
-                          autoPlay
-                          playsInline
-                          muted
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center px-4 py-2 backdrop-blur-sm bg-black/50 rounded-lg">
-                            {section.gestureType.includes(activeGesture as any) ? (
-                              <span className="text-neon-purple font-bold animate-pulse">
-                                {activeGesture?.charAt(0).toUpperCase() + activeGesture?.slice(1)} detected!
-                              </span>
-                            ) : (
-                              <span>Try the {section.title} gesture</span>
-                            )}
-                            {section.id === 'brightness' && (
-                              <div className="mt-2">
-                                <div className="w-full bg-black/60 h-2 rounded-full overflow-hidden">
-                                  <div 
-                                    className="bg-gradient-to-r from-neon-purple to-neon-pink h-full transition-all duration-300"
-                                    style={{ width: `${currentBrightness * 100}%` }}
-                                  ></div>
-                                </div>
-                                <div className="text-xs mt-1 text-gray-300">
-                                  Brightness: {Math.round(currentBrightness * 100)}%
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-center p-8">
-                        <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
-                        <p className="text-gray-400 mb-2">
-                          Click 'Try This Gesture' to enable camera and test this gesture.
-                        </p>
-                        <div className="text-xs text-gray-500">
-                          Camera access required for gesture detection
-                        </div>
-                      </div>
-                    )}
-                  </div>
+      {gestureSections.map((section, index) => (
+        <div 
+          key={section.id}
+          className={`min-h-screen flex items-center justify-center relative ${
+            index % 2 === 0 ? 'bg-black' : 'bg-black/90'
+          } scroll-mt-16`}
+          id={section.id}
+        >
+          <div 
+            className={`container mx-auto px-4 py-24 flex flex-col md:flex-row items-center ${
+              index % 2 !== 0 ? 'md:flex-row-reverse' : ''
+            }`}
+            style={{ 
+              transform: `translateY(${Math.max(0, (scrollY - 500 * (index + 1)) * 0.1)}px)`,
+              opacity: Math.min(1, Math.max(0, 1 - Math.abs((scrollY - 500 * (index + 1)) / 500)))
+            }}
+          >
+            <div className="w-full md:w-1/2 mb-10 md:mb-0 text-center md:text-left">
+              <div className="mb-6 transform hover:scale-110 transition-transform duration-300">{section.icon}</div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient">{section.title}</h2>
+              <p className="text-xl text-gray-300 mb-8">{section.description}</p>
+              <Button 
+                onClick={() => {
+                  if (!permissionGranted) {
+                    requestCameraPermission();
+                  } else {
+                    section.gestureDemo();
+                  }
+                }}
+                className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${
+                  section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple' : ''
+                }`}
+              >
+                Try This Gesture
+              </Button>
+            </div>
+            <div className="w-full md:w-1/2 flex justify-center">
+              <div 
+                className={`glass-morphism rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${
+                  section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''
+                }`}
+              >
+                <div className="text-center p-8">
+                  <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
+                  <p className="text-gray-400">
+                    {permissionGranted
+                      ? section.gestureType.includes(activeGesture as any)
+                        ? `${activeGesture} gesture detected!`
+                        : "Camera access granted! Try the gesture."
+                      : "Click 'Try This Gesture' to enable camera and test this gesture."}
+                  </p>
                 </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      </div>
+      ))}
 
       {/* Custom Gesture Tool Section */}
       <div 
         id="custom-gestures"
-        className="container mx-auto px-4 py-24"
+        className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16"
       >
-        <div className="max-w-4xl mx-auto bg-black/40 border border-white/10 rounded-xl p-8 transition-all duration-300 hover:border-neon-purple/40">
-          <div className="flex flex-col lg:flex-row items-center gap-8">
-            <div className="w-full lg:w-1/2 text-center lg:text-left">
-              <div className="mb-6 transform hover:scale-110 transition-transform duration-300">
-                <Settings className="w-12 h-12 text-neon-purple" />
-              </div>
-              <h2 className="text-3xl font-bold mb-4 text-gradient">Create Your Own Gesture Tool</h2>
-              <p className="text-lg text-gray-300 mb-6">
-                Define custom gestures and assign them to any action you want. Take control of your device like never before.
-              </p>
-              <Button 
-                onClick={handleCustomGestureTool}
-                className="bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300"
-              >
-                Try Now
-              </Button>
+        <div 
+          className="container mx-auto px-4 py-24 flex flex-col md:flex-row items-center"
+          style={{ 
+            transform: `translateY(${Math.max(0, (scrollY - 500 * 6) * 0.1)}px)`,
+            opacity: Math.min(1, Math.max(0, 1 - Math.abs((scrollY - 500 * 6) / 500)))
+          }}
+        >
+          <div className="w-full md:w-1/2 mb-10 md:mb-0 text-center md:text-left">
+            <div className="mb-6 transform hover:scale-110 transition-transform duration-300">
+              <Settings className="w-12 h-12 text-neon-purple" />
             </div>
-            <div className="w-full lg:w-1/2">
-              <div className="border border-white/10 rounded-xl w-full aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300">
-                <div className="text-center p-8">
-                  <h3 className="text-xl font-semibold mb-4">Custom Gesture Creator</h3>
-                  <p className="text-gray-400">
-                    Design your perfect workflow with personalized hand gestures tailored to your needs.
-                  </p>
-                  <div className="mt-6 flex justify-center space-x-4">
-                    <HandMetal className="w-8 h-8 text-neon-purple" />
-                    <ArrowRight className="w-8 h-8 text-gray-500" />
-                    <Settings className="w-8 h-8 text-neon-purple" />
-                  </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient">Create Your Own Gesture Tool</h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Define custom gestures and assign them to any action you want. Take control of your device like never before.
+            </p>
+            <Button 
+              onClick={handleCustomGestureTool}
+              className="bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300"
+            >
+              Try Now
+            </Button>
+          </div>
+          <div className="w-full md:w-1/2 flex justify-center">
+            <div className="glass-morphism rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300">
+              <div className="text-center p-8">
+                <h3 className="text-xl font-semibold mb-4">Custom Gesture Creator</h3>
+                <p className="text-gray-400">
+                  Design your perfect workflow with personalized hand gestures tailored to your needs.
+                </p>
+                <div className="mt-6 flex justify-center space-x-4">
+                  <HandMetal className="w-8 h-8 text-neon-purple" />
+                  <ArrowRight className="w-8 h-8 text-gray-500" />
+                  <Settings className="w-8 h-8 text-neon-purple" />
                 </div>
               </div>
             </div>
@@ -401,7 +372,12 @@ const Index = () => {
       {/* CTA Section */}
       <div className="bg-black py-20 px-4 relative">
         <div className="absolute inset-0 bg-gradient-radial from-purple-900/10 to-transparent opacity-60"></div>
-        <div className="container mx-auto text-center relative z-10 max-w-3xl">
+        <div 
+          className="container mx-auto text-center relative z-10 max-w-3xl"
+          style={{ 
+            transform: `translateY(${Math.max(0, (scrollY - 3000) * 0.05)}px)` 
+          }}
+        >
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient glow">
             Ready to Control Your Device with Gestures?
           </h2>
@@ -443,37 +419,29 @@ const Index = () => {
         </div>
       </footer>
 
-      {/* Add global styles */}
-      <style>{`
+      {/* Add global styles for the brightness filter */}
+      <style jsx="true">{`
         :root {
-          --brightness: ${currentBrightness};
+          --brightness: 1;
         }
         
         /* Smooth scrolling for the entire page */
         html {
           scroll-behavior: smooth;
         }
+
+        /* Hover animation for interactive elements */
+        .hover-scale {
+          transition: transform 0.3s ease;
+        }
         
+        .hover-scale:hover {
+          transform: scale(1.05);
+        }
+
         /* Animation for active gestures */
         .gesture-active {
           animation: pulse 2s infinite;
-        }
-
-        body {
-          filter: brightness(var(--brightness));
-          transition: filter 0.3s ease;
-        }
-        
-        /* Gesture recognition zone styling */
-        .gesture-recognition-zone {
-          background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(12px);
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .gesture-section {
-          scroll-margin-top: 100px;
         }
 
         @keyframes pulse {
