@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/components/ui/use-toast";
 import Navigation from "@/components/Navigation";
 import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle } from "lucide-react";
+
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
@@ -218,6 +220,7 @@ const Index = () => {
       });
     }
   };
+  // Gesture sections with updated brightness section
   const gestureSections = [{
     id: "brightness",
     title: "Change Brightness",
@@ -352,10 +355,64 @@ const Index = () => {
                 </Button>
               </div>
               <div className="w-full md:w-1/2 flex justify-center">
-                <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
-                  <div className="text-center p-8 w-full">
-                    <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
-                    {permissionGranted && activeVideoId === section.id ? <div className="relative zoom-in">
+                {section.id === "brightness" ? (
+                  <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
+                    <div 
+                      className="absolute inset-0 bg-gradient-to-b from-neon-purple/5 via-black/20 to-black/40 transition-opacity duration-500"
+                      style={{ 
+                        opacity: currentBrightness,
+                        background: `linear-gradient(to bottom, rgba(139, 92, 246, ${0.1 * currentBrightness}), rgba(0, 0, 0, ${0.4 - (0.2 * currentBrightness)}))`
+                      }}
+                    ></div>
+                    
+                    <div className="relative z-10 flex items-center justify-center h-full w-full">
+                      <div className="flex items-center justify-center h-4/5">
+                        <div className="mr-6 text-center">
+                          <p className="text-lg font-semibold mb-2">Brightness</p>
+                          <p className="text-3xl font-bold">{Math.round(currentBrightness * 100)}%</p>
+                        </div>
+                        
+                        <div className="h-64 flex items-center relative">
+                          {permissionGranted && activeVideoId === section.id ? (
+                            <div className="absolute -left-32 bottom-0 w-24 h-24 zoom-in opacity-60">
+                              <video ref={videoRef} className="w-full h-full object-cover rounded-lg" autoPlay playsInline muted />
+                            </div>
+                          ) : null}
+                          
+                          <Slider
+                            orientation="vertical"
+                            value={[currentBrightness * 100]}
+                            max={150}
+                            min={50}
+                            step={1}
+                            onValueChange={(value) => {
+                              const brightness = value[0] / 100;
+                              setCurrentBrightness(brightness);
+                              gestureDetection.adjustBrightness(brightness > currentBrightness ? 'up' : 'down');
+                            }}
+                            className="h-full brightness-slider"
+                          />
+                          
+                          <div className="ml-3 flex flex-col justify-between h-full text-xs opacity-70">
+                            <div>150%</div>
+                            <div>100%</div>
+                            <div>50%</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {activeGesture && section.gestureType.includes(activeGesture as any) && (
+                      <div className="absolute bottom-2 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
+                        {section.status}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
+                    <div className="text-center p-8 w-full">
+                      <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
+                      {permissionGranted && activeVideoId === section.id ? <div className="relative zoom-in">
                         <video ref={videoRef} className="w-full h-48 object-cover rounded-lg mb-3" autoPlay playsInline muted />
                         <div className="mb-3 text-white bg-black/50 p-2 rounded">
                           <p className="font-mono text-sm">
@@ -370,8 +427,9 @@ const Index = () => {
                       </div> : <p className="text-gray-400">
                         Click 'Try This Gesture' to enable camera and test this gesture.
                       </p>}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -496,7 +554,18 @@ const Index = () => {
         :root {
           --brightness: ${currentBrightness};
         }
+
+        /* Custom styles for the vertical brightness slider */
+        .brightness-slider .radix-slider-thumb {
+          box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+          transition: all 0.3s ease;
+        }
+        .brightness-slider .radix-slider-thumb:hover {
+          transform: scale(1.2);
+          box-shadow: 0 0 25px rgba(255, 255, 255, 0.9), 0 0 5px rgba(139, 92, 246, 0.8);
+        }
       `}</style>
     </div>;
 };
+
 export default Index;
