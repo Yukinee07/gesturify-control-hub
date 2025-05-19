@@ -7,7 +7,8 @@ import Navigation from "@/components/Navigation";
 import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle, ThumbsUp, ThumbsDown } from "lucide-react";
+
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
@@ -130,6 +131,7 @@ const Index = () => {
     // Apply the corresponding action based on the detected gesture
     switch (gesture) {
       case 'slideUp':
+      case 'thumbRight': // Add handling for new thumb right gesture
         const newBrightnessUp = Math.min(currentBrightness + 0.1, 1.5);
         setCurrentBrightness(newBrightnessUp);
         gestureDetection.adjustBrightness('up');
@@ -144,6 +146,7 @@ const Index = () => {
         });
         break;
       case 'slideDown':
+      case 'thumbLeft': // Add handling for new thumb left gesture
         const newBrightnessDown = Math.max(currentBrightness - 0.1, 0.5);
         setCurrentBrightness(newBrightnessDown);
         gestureDetection.adjustBrightness('down');
@@ -269,18 +272,19 @@ const Index = () => {
   const gestureSections = [{
     id: "brightness",
     title: "Change Brightness",
-    description: "Control Screen Brightness with Simple Hand Movement.",
+    description: "Control Screen Brightness with Thumb Gestures. Point thumb right to increase, left to decrease.",
     icon: <ArrowUp className="w-12 h-12 text-neon-purple" />,
     gestureDemo: () => {
       if (!trackBrightnessWithCursor) {
         setTrackBrightnessWithCursor(true);
       } else {
-        gestureDetection.simulateGestureDetection('slideUp');
+        gestureDetection.simulateGestureDetection('thumbRight');
       }
     },
-    gestureType: ['slideUp', 'slideDown'],
+    gestureType: ['slideUp', 'slideDown', 'thumbLeft', 'thumbRight'],
     status: gestureStatus.brightness || "Waiting for gesture...",
-    value: currentBrightness
+    value: currentBrightness,
+    instructions: "Point thumb right to increase brightness, left to decrease"
   }, {
     id: "volume",
     title: "Change Audio",
@@ -445,6 +449,19 @@ const Index = () => {
                     
                     {(activeGesture && section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor) && <div className="absolute bottom-2 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
                         {trackBrightnessWithCursor ? "Move cursor to adjust brightness" : section.status}
+                      </div>}
+                      
+                    {permissionGranted && activeVideoId === section.id && <div className="absolute top-4 left-0 right-0 text-center">
+                        <div className="flex justify-center items-center space-x-10 bg-black/50 py-2 px-4 mx-auto rounded-full inline-block">
+                          <div className="flex flex-col items-center">
+                            <ThumbsLeft className="w-8 h-8 text-white" />
+                            <span className="text-xs mt-1">Decrease</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <ThumbsRight className="w-8 h-8 text-white" />
+                            <span className="text-xs mt-1">Increase</span>
+                          </div>
+                        </div>
                       </div>}
                   </div> : <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
                     <div className="text-center p-8 w-full">

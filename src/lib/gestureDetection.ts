@@ -1,4 +1,3 @@
-
 // This is a placeholder for the actual gesture detection library
 // We would use a real hand tracking library like Handpose or MediaPipe in production
 
@@ -7,6 +6,8 @@ export type GestureType =
   | 'slideDown' 
   | 'slideLeft' 
   | 'slideRight'
+  | 'thumbRight'
+  | 'thumbLeft'
   | 'clap'
   | 'peace'
   | 'pinch'
@@ -26,6 +27,9 @@ class GestureDetection {
   private continuousGestureTimer: NodeJS.Timeout | null = null;
   private brightnessValue: number = 1.0;
   private volumeValue: number = 0.5;
+  private gestureTimeout: NodeJS.Timeout | null = null;
+  private gestureThrottleTime: number = 500; // ms between gesture detections
+  private lastGestureTime: number = 0;
 
   async requestPermission(): Promise<boolean> {
     try {
@@ -57,7 +61,35 @@ class GestureDetection {
     console.log("Gesture detection started");
     
     // In a real implementation, we would start the hand tracking here
-    // For now, we'll simulate gesture detection with a timeout
+    // For now, we'll set up a continuous detection loop
+    this.startGestureDetectionLoop();
+  }
+
+  private startGestureDetectionLoop() {
+    // In a real implementation, this would process video frames
+    // For demo, we'll just simulate random gesture detections
+    this.gestureTimeout = setInterval(() => {
+      if (!this.isRunning) return;
+      
+      // In a real app, we would analyze the video frame here
+      // and detect actual hand gestures
+      
+      // For demo, occasionally simulate thumb gestures
+      if (Math.random() < 0.1) { // 10% chance of gesture detection
+        const now = Date.now();
+        // Throttle detections
+        if (now - this.lastGestureTime > this.gestureThrottleTime) {
+          this.lastGestureTime = now;
+          // Randomly pick thumbLeft or thumbRight
+          const gesture = Math.random() > 0.5 ? 'thumbRight' : 'thumbLeft';
+          
+          if (this.options.onGestureDetected) {
+            console.log("Gesture detected:", gesture);
+            this.options.onGestureDetected(gesture);
+          }
+        }
+      }
+    }, 1000); // Check every second
   }
 
   stop() {
@@ -76,6 +108,11 @@ class GestureDetection {
     if (this.continuousGestureTimer) {
       clearInterval(this.continuousGestureTimer);
       this.continuousGestureTimer = null;
+    }
+    
+    if (this.gestureTimeout) {
+      clearInterval(this.gestureTimeout);
+      this.gestureTimeout = null;
     }
     
     this.isRunning = false;
