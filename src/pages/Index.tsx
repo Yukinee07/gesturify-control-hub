@@ -8,8 +8,6 @@ import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle, ThumbsUp, ThumbsDown } from "lucide-react";
-import ThumbsLeft from "@/components/icons/ThumbsLeft";
-import ThumbsRight from "@/components/icons/ThumbsRight";
 
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
