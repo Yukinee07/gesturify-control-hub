@@ -23,6 +23,9 @@ const Index = () => {
   const [currentBrightness, setCurrentBrightness] = useState(1);
   const [currentVolume, setCurrentVolume] = useState(0.5);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [trackBrightnessWithCursor, setTrackBrightnessWithCursor] = useState(false);
+  const [thumbColor, setThumbColor] = useState("#FFFFFF");
+  
   const {
     toast
   } = useToast();
@@ -33,18 +36,58 @@ const Index = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const pricingSectionRef = useRef<HTMLDivElement>(null);
+  const brightnessContainerRef = useRef<HTMLDivElement>(null);
 
-  // Track mouse movement for cursor gradient effect
+  // Track mouse movement for cursor gradient effect and brightness control
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({
         x: e.clientX,
         y: e.clientY
       });
+      
+      // Update brightness based on cursor position if tracking is enabled
+      if (trackBrightnessWithCursor && brightnessContainerRef.current) {
+        const container = brightnessContainerRef.current;
+        const containerRect = container.getBoundingClientRect();
+        
+        // Calculate relative position within the container height (inverted because Y increases downward)
+        const containerHeight = containerRect.height;
+        const relativeY = containerRect.bottom - e.clientY;
+        
+        // Map to brightness range (50% to 150%)
+        let newBrightnessPercent = Math.max(50, Math.min(150, (relativeY / containerHeight) * 100 + 50));
+        const newBrightness = newBrightnessPercent / 100;
+        
+        // Only update if there's a significant change to avoid constant updates
+        if (Math.abs(newBrightness - currentBrightness) > 0.01) {
+          setCurrentBrightness(newBrightness);
+          
+          // Adjust thumb color based on brightness direction
+          // For upward movement (increased brightness) - darker color
+          // For downward movement (decreased brightness) - whiter color
+          const movingUp = newBrightness > currentBrightness;
+          
+          // Calculate color between white and dark purple based on position
+          // Map brightness from 0.5-1.5 range to colors
+          const colorIntensity = Math.max(0, Math.min(255, 255 - ((newBrightnessPercent - 50) * 1.5)));
+          const newColor = `rgb(${colorIntensity}, ${colorIntensity}, ${colorIntensity})`;
+          setThumbColor(newColor);
+          
+          // Update status
+          const statusDirection = movingUp ? "Increasing" : "Decreasing";
+          const statusUpdate = `${statusDirection} brightness to ${Math.round(newBrightnessPercent)}%`;
+          setGestureStatus(prev => ({
+            ...prev,
+            brightness: statusUpdate
+          }));
+        }
+      }
     };
+    
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [trackBrightnessWithCursor, currentBrightness, brightnessContainerRef]);
 
   // Track scroll position for parallax effects
   useEffect(() => {
@@ -196,6 +239,12 @@ const Index = () => {
       await gestureDetection.requestPermission();
       setPermissionGranted(true);
       setActiveVideoId(sectionId);
+      
+      // Enable cursor tracking for brightness if this is the brightness section
+      if (sectionId === "brightness") {
+        setTrackBrightnessWithCursor(true);
+      }
+      
       toast({
         title: "Camera access granted",
         description: "You can now try the gesture controls."
@@ -226,7 +275,13 @@ const Index = () => {
     title: "Change Brightness",
     description: "Control Screen Brightness with Simple Hand Movement.",
     icon: <ArrowUp className="w-12 h-12 text-neon-purple" />,
-    gestureDemo: () => gestureDetection.simulateGestureDetection('slideUp'),
+    gestureDemo: () => {
+      if (!trackBrightnessWithCursor) {
+        setTrackBrightnessWithCursor(true);
+      } else {
+        gestureDetection.simulateGestureDetection('slideUp');
+      }
+    },
     gestureType: ['slideUp', 'slideDown'],
     status: gestureStatus.brightness || "Waiting for gesture...",
     value: currentBrightness
@@ -344,19 +399,26 @@ const Index = () => {
                 <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">{section.title}</h2>
                 <p className="text-xl text-gray-300 mb-8 text-center md:text-left">{section.description}</p>
                 <Button onClick={() => {
-              if (!permissionGranted) {
-                requestCameraPermission(section.id);
-              } else {
-                setActiveVideoId(section.id);
-                section.gestureDemo();
-              }
-            }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple' : ''}`}>
-                  Try This Gesture
+                  if (!permissionGranted) {
+                    requestCameraPermission(section.id);
+                  } else {
+                    setActiveVideoId(section.id);
+                    if (section.id === "brightness") {
+                      setTrackBrightnessWithCursor(!trackBrightnessWithCursor);
+                    } else {
+                      section.gestureDemo();
+                    }
+                  }
+                }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${section.gestureType.includes(activeGesture as any) || (section.id === "brightness" && trackBrightnessWithCursor) ? 'ring-4 ring-neon-purple' : ''}`}>
+                  {section.id === "brightness" && trackBrightnessWithCursor ? "Stop Tracking" : "Try This Gesture"}
                 </Button>
               </div>
               <div className="w-full md:w-1/2 flex justify-center">
                 {section.id === "brightness" ? (
-                  <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
+                  <div 
+                    ref={brightnessContainerRef} 
+                    className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor ? 'ring-4 ring-neon-purple scale-105' : ''}`}
+                  >
                     <div 
                       className="absolute inset-0 bg-gradient-to-b from-neon-purple/5 via-black/20 to-black/40 transition-opacity duration-500"
                       style={{ 
@@ -385,6 +447,7 @@ const Index = () => {
                             max={150}
                             min={50}
                             step={1}
+                            thumbColor={thumbColor}
                             onValueChange={(value) => {
                               const brightness = value[0] / 100;
                               setCurrentBrightness(brightness);
@@ -402,9 +465,9 @@ const Index = () => {
                       </div>
                     </div>
                     
-                    {activeGesture && section.gestureType.includes(activeGesture as any) && (
+                    {(activeGesture && section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor) && (
                       <div className="absolute bottom-2 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
-                        {section.status}
+                        {trackBrightnessWithCursor ? "Move cursor to adjust brightness" : section.status}
                       </div>
                     )}
                   </div>
@@ -559,6 +622,7 @@ const Index = () => {
         .brightness-slider .radix-slider-thumb {
           box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
           transition: all 0.3s ease;
+          background-color: ${thumbColor};
         }
         .brightness-slider .radix-slider-thumb:hover {
           transform: scale(1.2);
