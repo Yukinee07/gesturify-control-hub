@@ -467,7 +467,7 @@ const Index = () => {
 
       {/* CTA Section */}
       <div className="bg-black py-20 px-4 relative">
-        <div className="absolute inset-0  bg-transparent\n"></div>
+        <div className="bg-transparent"></div>
         <div className="container mx-auto text-center relative z-10 max-w-3xl bg-transparent">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient glow">
             Ready to Control Your Device with Gestures?
