@@ -59,32 +59,16 @@ button, a {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 .fade-in {
   animation: fadeIn 0.5s ease forwards;
-}
-
-/* Zoom animation for camera display */
-@keyframes zoomIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.zoom-in {
-  animation: zoomIn 0.3s ease-out forwards;
 }
 
 /* Staggered fade in for children */

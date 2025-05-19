@@ -4,11 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface NavigationProps {
-  scrollToPricing?: (e: React.MouseEvent) => void;
-}
-
-const Navigation = ({ scrollToPricing }: NavigationProps) => {
+const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { user, signOut } = useAuth();
   const location = useLocation();
@@ -49,13 +45,14 @@ const Navigation = ({ scrollToPricing }: NavigationProps) => {
             >
               Home
             </Link>
-            <a 
-              href="#pricing"
-              onClick={scrollToPricing}
-              className="text-sm font-medium transition-colors hover:text-white text-gray-400"
+            <Link 
+              to="/pricing"
+              className={`text-sm font-medium transition-colors hover:text-white ${
+                location.pathname === '/pricing' ? 'text-white' : 'text-gray-400'
+              }`}
             >
               Pricing
-            </a>
+            </Link>
             {user ? (
               <>
                 <Link 

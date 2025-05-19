@@ -8,25 +8,28 @@ import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-  Volume2, VolumeX, Chrome, MessageSquare, Camera,
-  HandMetal, PanelLeft, Settings, CheckCircle, X
+  Volume2, VolumeX, Chrome, HandMetal, Camera, 
+  Minimize, Settings, Hand
 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
+  const [activeGestureSection, setActiveGestureSection] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
   const [gestureStatus, setGestureStatus] = useState<{[key: string]: string}>({});
+  const [gestureProgress, setGestureProgress] = useState<{[key: string]: number}>({});
   const [currentBrightness, setCurrentBrightness] = useState(1);
   const [currentVolume, setCurrentVolume] = useState(0.5);
-  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [isGestureDialogOpen, setIsGestureDialogOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const cursorRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const pricingSectionRef = useRef<HTMLDivElement>(null);
+  const videoRefs = useRef<{[key: string]: HTMLVideoElement | null}>({});
 
   // Track mouse movement for cursor gradient effect
   useEffect(() => {
@@ -59,18 +62,9 @@ const Index = () => {
   // Stop gesture detection when component unmounts
   useEffect(() => {
     return () => {
-      if (permissionGranted) {
-        gestureDetection.stop();
-      }
+      gestureDetection.stop();
     };
-  }, [permissionGranted]);
-
-  // Update video stream if permission granted
-  useEffect(() => {
-    if (permissionGranted && videoRef.current && gestureDetection.stream) {
-      videoRef.current.srcObject = gestureDetection.stream;
-    }
-  }, [permissionGranted]);
+  }, []);
 
   // Handle gesture detection
   const handleGestureDetected = (gesture: GestureType) => {
@@ -126,18 +120,18 @@ const Index = () => {
           description: `Volume set to ${Math.round(newVolumeDown * 100)}%`,
         });
         break;
-      case 'clap':
+      case 'peace':
         gestureDetection.openChrome();
-        statusUpdate = "Opening Chrome browser";
+        statusUpdate = "Peace sign detected - opening Chrome browser";
         setGestureStatus(prev => ({...prev, openChrome: statusUpdate}));
         toast({
           title: "Opening Chrome",
           description: "Launching Chrome browser",
         });
         break;
-      case 'peace':
+      case 'clap':
         gestureDetection.closeWindow();
-        statusUpdate = "Peace sign detected - would close window";
+        statusUpdate = "Clap gesture detected - would close window";
         setGestureStatus(prev => ({...prev, closeWindow: statusUpdate}));
         toast({
           title: "Window Close Gesture",
@@ -164,19 +158,64 @@ const Index = () => {
     }, 2000);
   };
 
+  const handleGestureProgress = (gesture: GestureType, progress: number) => {
+    // Map the gesture to the corresponding section
+    let sectionId = "";
+    switch (gesture) {
+      case 'slideUp':
+      case 'slideDown':
+        sectionId = "brightness";
+        break;
+      case 'slideLeft':
+      case 'slideRight':
+        sectionId = "volume";
+        break;
+      case 'peace':
+        sectionId = "openChrome";
+        break;
+      case 'clap':
+        sectionId = "closeWindow";
+        break;
+      case 'pinch':
+        sectionId = "screenshot";
+        break;
+      default:
+        return;
+    }
+    
+    // Update progress for this section
+    setGestureProgress(prev => ({...prev, [sectionId]: progress}));
+    
+    // Update status message
+    const action = {
+      'slideUp': 'Increasing brightness',
+      'slideDown': 'Decreasing brightness',
+      'slideLeft': 'Decreasing volume',
+      'slideRight': 'Increasing volume',
+      'peace': 'Detecting peace sign',
+      'clap': 'Detecting clap',
+      'pinch': 'Detecting pinch'
+    }[gesture];
+    
+    setGestureStatus(prev => ({
+      ...prev, 
+      [sectionId]: `${action} - ${Math.round(progress * 100)}% complete`
+    }));
+  };
+
   const requestCameraPermission = async (sectionId: string) => {
     try {
-      await gestureDetection.requestPermission();
-      setPermissionGranted(true);
-      setActiveVideoId(sectionId);
-      toast({
-        title: "Camera access granted",
-        description: "You can now try the gesture controls.",
-      });
-
+      // If we're already active in another section, stop that one
+      if (activeGestureSection && activeGestureSection !== sectionId) {
+        gestureDetection.stop();
+      }
+      
+      setActiveGestureSection(sectionId);
+      
       // Start gesture detection with callback
       gestureDetection.start({
         onGestureDetected: handleGestureDetected,
+        onGestureProgress: handleGestureProgress,
         onError: (error) => {
           toast({
             variant: "destructive",
@@ -184,6 +223,12 @@ const Index = () => {
             description: error.message,
           });
         }
+      }, videoRefs.current[sectionId] || undefined);
+      
+      setPermissionGranted(true);
+      toast({
+        title: "Camera access granted",
+        description: "You can now try the gesture controls.",
       });
     } catch (err) {
       toast({
@@ -200,47 +245,52 @@ const Index = () => {
       title: "Hand Slide Up/Down",
       description: "Control screen brightness with a simple hand movement.",
       icon: <ArrowUp className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('slideUp'),
+      gestureDemo: () => gestureDetection.simulateGestureDetection('slideUp', 1000, videoRefs.current.brightness || undefined),
       gestureType: ['slideUp', 'slideDown'],
       status: gestureStatus.brightness || "Waiting for gesture...",
-      value: currentBrightness
+      value: currentBrightness,
+      progress: gestureProgress.brightness || 0
     },
     {
       id: "volume",
       title: "Hand Slide Right/Left",
       description: "Increase or decrease volume with horizontal hand movements.",
       icon: <Volume2 className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('slideRight'),
+      gestureDemo: () => gestureDetection.simulateGestureDetection('slideRight', 1000, videoRefs.current.volume || undefined),
       gestureType: ['slideLeft', 'slideRight'],
       status: gestureStatus.volume || "Waiting for gesture...",
-      value: currentVolume
+      value: currentVolume,
+      progress: gestureProgress.volume || 0
     },
     {
       id: "openChrome",
-      title: "Peace Sign",
-      description: "Open Chrome browser with a peace sign gesture.",
-      icon: <HandMetal className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('clap'),
-      gestureType: ['clap'],
-      status: gestureStatus.openChrome || "Waiting for gesture..."
+      title: "Peace Gesture",
+      description: "Open Chrome browser with a peace sign.",
+      icon: <Hand className="w-12 h-12 text-neon-purple" />,
+      gestureDemo: () => gestureDetection.simulateGestureDetection('peace', 1000, videoRefs.current.openChrome || undefined),
+      gestureType: ['peace'],
+      status: gestureStatus.openChrome || "Waiting for gesture...",
+      progress: gestureProgress.openChrome || 0
     },
     {
       id: "closeWindow",
-      title: "Clap",
+      title: "Clap Gesture",
       description: "Close the currently active window with a clap gesture.",
-      icon: <PanelLeft className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('peace'),
-      gestureType: ['peace'],
-      status: gestureStatus.closeWindow || "Waiting for gesture..."
+      icon: <HandMetal className="w-12 h-12 text-neon-purple" />,
+      gestureDemo: () => gestureDetection.simulateGestureDetection('clap', 1000, videoRefs.current.closeWindow || undefined),
+      gestureType: ['clap'],
+      status: gestureStatus.closeWindow || "Waiting for gesture...",
+      progress: gestureProgress.closeWindow || 0
     },
     {
       id: "screenshot",
-      title: "Pinch",
-      description: "Take a screenshot with a pinching gesture.",
-      icon: <Camera className="w-12 h-12 text-neon-purple" />,
-      gestureDemo: () => gestureDetection.simulateGestureDetection('pinch'),
+      title: "Pinch Gesture",
+      description: "Take a screenshot with a pinch gesture.",
+      icon: <Minimize className="w-12 h-12 text-neon-purple" />,
+      gestureDemo: () => gestureDetection.simulateGestureDetection('pinch', 1000, videoRefs.current.screenshot || undefined),
       gestureType: ['pinch'],
-      status: gestureStatus.screenshot || "Waiting for gesture..."
+      status: gestureStatus.screenshot || "Waiting for gesture...",
+      progress: gestureProgress.screenshot || 0
     },
   ];
 
@@ -252,64 +302,9 @@ const Index = () => {
         description: "Please log in to create custom gestures.",
       });
     } else {
-      // Scroll to pricing section
-      pricingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      navigate("/pricing");
     }
   };
-  
-  const scrollToPricing = (e: React.MouseEvent) => {
-    e.preventDefault();
-    pricingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // Pricing plans data
-  const pricingPlans = [
-    {
-      name: "Free",
-      price: "$0",
-      description: "Basic gesture controls for personal use",
-      features: [
-        "5 built-in gestures",
-        "Basic brightness and volume control",
-        "Chrome browser integration",
-        "Community support"
-      ],
-      buttonText: "Get Started",
-      buttonVariant: "outline",
-      recommended: false
-    },
-    {
-      name: "Pro",
-      price: "$9.99",
-      period: "monthly",
-      description: "Advanced controls for power users",
-      features: [
-        "Everything in Free",
-        "Custom gesture creation",
-        "Advanced application control",
-        "Priority support",
-        "Multiple device profiles"
-      ],
-      buttonText: "Upgrade Now",
-      buttonVariant: "default",
-      recommended: true
-    },
-    {
-      name: "Enterprise",
-      price: "Contact Us",
-      description: "Custom solutions for organizations",
-      features: [
-        "Everything in Pro",
-        "Custom integration development",
-        "Team management",
-        "Dedicated account manager",
-        "Training sessions"
-      ],
-      buttonText: "Contact Sales",
-      buttonVariant: "outline",
-      recommended: false
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden relative">
@@ -321,11 +316,7 @@ const Index = () => {
 
       {/* Hero Section */}
       <div className="relative min-h-screen flex flex-col">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-radial from-purple-900/20 to-transparent"></div>
-        </div>
-
-        <Navigation scrollToPricing={scrollToPricing} />
+        <Navigation />
 
         <div className="flex-1 flex flex-col items-center justify-center px-4 z-10">
           <div className="text-center max-w-3xl mx-auto">
@@ -343,14 +334,11 @@ const Index = () => {
                     Get Started — It's Free
                   </Button>
                 </Link>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="border-white/10 hover:bg-white/5 transform hover:scale-105 duration-300"
-                  onClick={scrollToPricing}
-                >
-                  View Pricing
-                </Button>
+                <Link to="/pricing">
+                  <Button size="lg" variant="outline" className="border-white/10 hover:bg-white/5 transform hover:scale-105 duration-300">
+                    View Pricing
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
@@ -367,28 +355,18 @@ const Index = () => {
       {gestureSections.map((section, index) => (
         <div 
           key={section.id}
-          className={`min-h-screen flex items-center justify-center relative ${
-            index % 2 === 0 ? 'bg-black' : 'bg-black/90'
-          } scroll-mt-16`}
+          className="min-h-screen flex items-center justify-center relative scroll-mt-16"
           id={section.id}
         >
-          <div 
-            className={`container mx-auto px-4 py-24 flex flex-col md:flex-row items-center ${
-              index % 2 !== 0 ? 'md:flex-row-reverse' : ''
-            }`}
-          >
-            <div className="w-full md:w-1/2 mb-10 md:mb-0 flex flex-col items-center md:items-start">
-              <div className="mb-6 transform hover:scale-110 transition-transform duration-300">{section.icon}</div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">{section.title}</h2>
-              <p className="text-xl text-gray-300 mb-8 text-center md:text-left">{section.description}</p>
+          <div className="container mx-auto px-4 py-24 flex flex-col items-center">
+            <div className="text-center max-w-3xl mb-16">
+              <div className="mb-6 transform hover:scale-110 transition-transform duration-300 flex justify-center">{section.icon}</div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient">{section.title}</h2>
+              <p className="text-xl text-gray-300 mb-8">{section.description}</p>
               <Button 
                 onClick={() => {
-                  if (!permissionGranted) {
-                    requestCameraPermission(section.id);
-                  } else {
-                    setActiveVideoId(section.id);
-                    section.gestureDemo();
-                  }
+                  requestCameraPermission(section.id);
+                  section.gestureDemo();
                 }}
                 className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${
                   section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple' : ''
@@ -397,42 +375,64 @@ const Index = () => {
                 Try This Gesture
               </Button>
             </div>
-            <div className="w-full md:w-1/2 flex justify-center">
+            
+            <div className="w-full max-w-3xl">
               <div 
-                className={`glass-morphism rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${
+                className={`glass-morphism rounded-xl w-full aspect-video flex items-center justify-center transition-all duration-500 ${
                   section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''
-                }`}
+                } ${activeGestureSection === section.id ? 'animate-fade-in' : ''}`}
               >
-                <div className="text-center p-8 w-full">
+                <div className="text-center p-8 w-full h-full flex flex-col">
                   <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
-                  {permissionGranted && activeVideoId === section.id ? (
-                    <div className="relative animate-fade-in">
-                      <video 
-                        ref={videoRef}
-                        className="w-full h-48 object-cover rounded-lg mb-3"
-                        autoPlay
-                        playsInline
-                        muted
-                      />
-                      <div className="mb-3 text-white bg-black/50 p-2 rounded">
-                        <p className="font-mono text-sm">
-                          {section.status}
-                        </p>
-                      </div>
-                      {'value' in section && (
-                        <div className="w-full bg-gray-700 h-2 rounded-full mt-2">
-                          <div 
-                            className="bg-gradient-to-r from-neon-purple to-neon-pink h-full rounded-full"
-                            style={{ width: `${Math.round(section.value * 100)}%` }}
-                          ></div>
+                  <div className="relative flex-grow flex flex-col justify-center items-center">
+                    {activeGestureSection === section.id ? (
+                      <>
+                        <div className="relative w-full h-full">
+                          <video 
+                            ref={(el) => { videoRefs.current[section.id] = el }}
+                            className="w-full h-full object-cover rounded-lg mb-3"
+                            autoPlay
+                            playsInline
+                            muted
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 mb-3 text-white bg-black/70 p-2 rounded">
+                            <p className="font-mono text-sm">
+                              {section.status}
+                            </p>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400">
-                      Click 'Try This Gesture' to enable camera and test this gesture.
-                    </p>
-                  )}
+                        
+                        {/* Progress bar for gesture detection */}
+                        <div className="w-full mt-4">
+                          <div className="w-full bg-gray-700 h-2 rounded-full">
+                            <div 
+                              className="bg-gradient-to-r from-neon-purple to-neon-pink h-full rounded-full transition-all duration-300"
+                              style={{ width: `${Math.round(section.progress * 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        
+                        {/* Value indicator for brightness/volume */}
+                        {'value' in section && (
+                          <div className="w-full mt-2">
+                            <div className="w-full bg-gray-700 h-2 rounded-full">
+                              <div 
+                                className="bg-gradient-to-r from-neon-blue to-neon-purple h-full rounded-full"
+                                style={{ width: `${Math.round(section.value * 100)}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-xs text-right mt-1">
+                              {Math.round(section.value * 100)}%
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-400">
+                        Click 'Try This Gesture' to enable camera and test this gesture.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -445,13 +445,13 @@ const Index = () => {
         id="custom-gestures"
         className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16"
       >
-        <div className="container mx-auto px-4 py-24 flex flex-col md:flex-row items-center">
-          <div className="w-full md:w-1/2 mb-10 md:mb-0 flex flex-col items-center md:items-start">
-            <div className="mb-6 transform hover:scale-110 transition-transform duration-300">
+        <div className="container mx-auto px-4 py-24 flex flex-col items-center">
+          <div className="text-center max-w-3xl">
+            <div className="mb-6 transform hover:scale-110 transition-transform duration-300 flex justify-center">
               <Settings className="w-12 h-12 text-neon-purple" />
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">Create Your Own Gesture Tool</h2>
-            <p className="text-xl text-gray-300 mb-8 text-center md:text-left">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient">Create Your Own Gesture Tool</h2>
+            <p className="text-xl text-gray-300 mb-8">
               Define custom gestures and assign them to any action you want. Take control of your device like never before.
             </p>
             <Button 
@@ -460,9 +460,8 @@ const Index = () => {
             >
               Try Now
             </Button>
-          </div>
-          <div className="w-full md:w-1/2 flex justify-center">
-            <div className="glass-morphism rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300">
+            
+            <div className="glass-morphism rounded-xl w-full max-w-3xl aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300 mt-16 mx-auto">
               <div className="text-center p-8">
                 <h3 className="text-xl font-semibold mb-4">Custom Gesture Creator</h3>
                 <p className="text-gray-400">
@@ -479,63 +478,8 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Pricing Section */}
-      <div 
-        id="pricing" 
-        ref={pricingSectionRef}
-        className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16"
-      >
-        <div className="container mx-auto px-4 py-24">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-gradient glow">Pricing Plans</h2>
-            <p className="text-xl text-gray-300">
-              Choose the plan that suits your needs and unlock the full potential of gesture controls
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {pricingPlans.map((plan, index) => (
-              <div 
-                key={index}
-                className={`glass-morphism rounded-xl p-8 flex flex-col h-full transition-all duration-300 hover:scale-105 ${
-                  plan.recommended ? 'border-neon-purple ring-2 ring-neon-purple/50 relative' : ''
-                }`}
-              >
-                {plan.recommended && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-neon-purple to-neon-pink px-4 py-1 rounded-full text-sm font-medium">
-                    Recommended
-                  </div>
-                )}
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  {plan.period && <span className="text-gray-400">/{plan.period}</span>}
-                </div>
-                <p className="text-gray-300 mb-6">{plan.description}</p>
-                <div className="mb-8 flex-grow">
-                  <ul className="space-y-3">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <CheckCircle className="w-5 h-5 text-neon-purple mr-2 flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <Button 
-                  variant={plan.buttonVariant as "outline" | "default"}
-                  className={`w-full ${plan.buttonVariant === "default" ? "bg-gradient-to-r from-neon-purple to-neon-pink" : "border-white/20"}`}
-                >
-                  {plan.buttonText}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* CTA Section */}
-      <div className="bg-black py-20 px-4 relative">
+      <div className="py-20 px-4 relative">
         <div className="absolute inset-0 bg-gradient-radial from-purple-900/10 to-transparent opacity-60"></div>
         <div className="container mx-auto text-center relative z-10 max-w-3xl">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient glow">
@@ -560,7 +504,7 @@ const Index = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-black py-12 border-t border-white/5">
+      <footer className="py-12 border-t border-white/5">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-6 md:mb-0">
@@ -614,16 +558,6 @@ const Index = () => {
           100% {
             box-shadow: 0 0 0 0 rgba(155, 89, 182, 0);
           }
-        }
-        
-        /* Fade in animation for video element */
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-out forwards;
         }
       `}</style>
     </div>
