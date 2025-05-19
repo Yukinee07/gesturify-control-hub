@@ -8,7 +8,6 @@ import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle } from "lucide-react";
-
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
@@ -25,7 +24,6 @@ const Index = () => {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [trackBrightnessWithCursor, setTrackBrightnessWithCursor] = useState(false);
   const [thumbColor, setThumbColor] = useState("#FFFFFF");
-  
   const {
     toast
   } = useToast();
@@ -45,35 +43,35 @@ const Index = () => {
         x: e.clientX,
         y: e.clientY
       });
-      
+
       // Update brightness based on cursor position if tracking is enabled
       if (trackBrightnessWithCursor && brightnessContainerRef.current) {
         const container = brightnessContainerRef.current;
         const containerRect = container.getBoundingClientRect();
-        
+
         // Calculate relative position within the container height (inverted because Y increases downward)
         const containerHeight = containerRect.height;
         const relativeY = containerRect.bottom - e.clientY;
-        
+
         // Map to brightness range (50% to 150%)
-        let newBrightnessPercent = Math.max(50, Math.min(150, (relativeY / containerHeight) * 100 + 50));
+        let newBrightnessPercent = Math.max(50, Math.min(150, relativeY / containerHeight * 100 + 50));
         const newBrightness = newBrightnessPercent / 100;
-        
+
         // Only update if there's a significant change to avoid constant updates
         if (Math.abs(newBrightness - currentBrightness) > 0.01) {
           setCurrentBrightness(newBrightness);
-          
+
           // Adjust thumb color based on brightness direction
           // For upward movement (increased brightness) - darker color
           // For downward movement (decreased brightness) - whiter color
           const movingUp = newBrightness > currentBrightness;
-          
+
           // Calculate color between white and dark purple based on position
           // Map brightness from 0.5-1.5 range to colors
-          const colorIntensity = Math.max(0, Math.min(255, 255 - ((newBrightnessPercent - 50) * 1.5)));
+          const colorIntensity = Math.max(0, Math.min(255, 255 - (newBrightnessPercent - 50) * 1.5));
           const newColor = `rgb(${colorIntensity}, ${colorIntensity}, ${colorIntensity})`;
           setThumbColor(newColor);
-          
+
           // Update status
           const statusDirection = movingUp ? "Increasing" : "Decreasing";
           const statusUpdate = `${statusDirection} brightness to ${Math.round(newBrightnessPercent)}%`;
@@ -84,7 +82,6 @@ const Index = () => {
         }
       }
     };
-    
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [trackBrightnessWithCursor, currentBrightness, brightnessContainerRef]);
@@ -239,12 +236,11 @@ const Index = () => {
       await gestureDetection.requestPermission();
       setPermissionGranted(true);
       setActiveVideoId(sectionId);
-      
+
       // Enable cursor tracking for brightness if this is the brightness section
       if (sectionId === "brightness") {
         setTrackBrightnessWithCursor(true);
       }
-      
       toast({
         title: "Camera access granted",
         description: "You can now try the gesture controls."
@@ -399,33 +395,26 @@ const Index = () => {
                 <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">{section.title}</h2>
                 <p className="text-xl text-gray-300 mb-8 text-center md:text-left">{section.description}</p>
                 <Button onClick={() => {
-                  if (!permissionGranted) {
-                    requestCameraPermission(section.id);
-                  } else {
-                    setActiveVideoId(section.id);
-                    if (section.id === "brightness") {
-                      setTrackBrightnessWithCursor(!trackBrightnessWithCursor);
-                    } else {
-                      section.gestureDemo();
-                    }
-                  }
-                }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${section.gestureType.includes(activeGesture as any) || (section.id === "brightness" && trackBrightnessWithCursor) ? 'ring-4 ring-neon-purple' : ''}`}>
+              if (!permissionGranted) {
+                requestCameraPermission(section.id);
+              } else {
+                setActiveVideoId(section.id);
+                if (section.id === "brightness") {
+                  setTrackBrightnessWithCursor(!trackBrightnessWithCursor);
+                } else {
+                  section.gestureDemo();
+                }
+              }
+            }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${section.gestureType.includes(activeGesture as any) || section.id === "brightness" && trackBrightnessWithCursor ? 'ring-4 ring-neon-purple' : ''}`}>
                   {section.id === "brightness" && trackBrightnessWithCursor ? "Stop Tracking" : "Try This Gesture"}
                 </Button>
               </div>
               <div className="w-full md:w-1/2 flex justify-center">
-                {section.id === "brightness" ? (
-                  <div 
-                    ref={brightnessContainerRef} 
-                    className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor ? 'ring-4 ring-neon-purple scale-105' : ''}`}
-                  >
-                    <div 
-                      className="absolute inset-0 bg-gradient-to-b from-neon-purple/5 via-black/20 to-black/40 transition-opacity duration-500"
-                      style={{ 
-                        opacity: currentBrightness,
-                        background: `linear-gradient(to bottom, rgba(139, 92, 246, ${0.1 * currentBrightness}), rgba(0, 0, 0, ${0.4 - (0.2 * currentBrightness)}))`
-                      }}
-                    ></div>
+                {section.id === "brightness" ? <div ref={brightnessContainerRef} className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
+                    <div className="absolute inset-0 bg-gradient-to-b from-neon-purple/5 via-black/20 to-black/40 transition-opacity duration-500" style={{
+                opacity: currentBrightness,
+                background: `linear-gradient(to bottom, rgba(139, 92, 246, ${0.1 * currentBrightness}), rgba(0, 0, 0, ${0.4 - 0.2 * currentBrightness}))`
+              }}></div>
                     
                     <div className="relative z-10 flex items-center justify-center h-full w-full">
                       <div className="flex items-center justify-center h-4/5">
@@ -435,26 +424,15 @@ const Index = () => {
                         </div>
                         
                         <div className="h-64 flex items-center relative">
-                          {permissionGranted && activeVideoId === section.id ? (
-                            <div className="absolute -left-32 bottom-0 w-24 h-24 zoom-in opacity-60">
-                              <video ref={videoRef} className="w-full h-full object-cover rounded-lg" autoPlay playsInline muted />
-                            </div>
-                          ) : null}
+                          {permissionGranted && activeVideoId === section.id ? <div className="absolute -left-32 bottom-0 w-24 h-24 zoom-in opacity-60">
+                              
+                            </div> : null}
                           
-                          <Slider
-                            orientation="vertical"
-                            value={[currentBrightness * 100]}
-                            max={150}
-                            min={50}
-                            step={1}
-                            thumbColor={thumbColor}
-                            onValueChange={(value) => {
-                              const brightness = value[0] / 100;
-                              setCurrentBrightness(brightness);
-                              gestureDetection.adjustBrightness(brightness > currentBrightness ? 'up' : 'down');
-                            }}
-                            className="h-full brightness-slider"
-                          />
+                          <Slider orientation="vertical" value={[currentBrightness * 100]} max={150} min={50} step={1} thumbColor={thumbColor} onValueChange={value => {
+                      const brightness = value[0] / 100;
+                      setCurrentBrightness(brightness);
+                      gestureDetection.adjustBrightness(brightness > currentBrightness ? 'up' : 'down');
+                    }} className="h-full brightness-slider" />
                           
                           <div className="ml-3 flex flex-col justify-between h-full text-xs opacity-70">
                             <div>150%</div>
@@ -465,14 +443,10 @@ const Index = () => {
                       </div>
                     </div>
                     
-                    {(activeGesture && section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor) && (
-                      <div className="absolute bottom-2 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
+                    {(activeGesture && section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor) && <div className="absolute bottom-2 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
                         {trackBrightnessWithCursor ? "Move cursor to adjust brightness" : section.status}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
+                      </div>}
+                  </div> : <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
                     <div className="text-center p-8 w-full">
                       <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
                       {permissionGranted && activeVideoId === section.id ? <div className="relative zoom-in">
@@ -491,8 +465,7 @@ const Index = () => {
                         Click 'Try This Gesture' to enable camera and test this gesture.
                       </p>}
                     </div>
-                  </div>
-                )}
+                  </div>}
               </div>
             </div>
           </div>
@@ -631,5 +604,4 @@ const Index = () => {
       `}</style>
     </div>;
 };
-
 export default Index;
