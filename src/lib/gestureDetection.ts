@@ -1,4 +1,3 @@
-
 // This is a placeholder for the actual gesture detection library
 // We would use a real hand tracking library like Handpose or MediaPipe in production
 
@@ -195,7 +194,7 @@ class GestureDetection {
   closeWindow() {
     // In a real app, we would use system APIs to close the current window
     // For demo purposes, we'll simulate this with an alert
-    alert('Peace gesture detected. In a real app, this would close the current window.');
+    alert('Clap gesture detected. In a real app, this would close the current window.');
   }
 
   takeScreenshot() {
@@ -216,4 +215,3 @@ class GestureDetection {
 
 // Export a singleton instance
 export const gestureDetection = new GestureDetection();
-
