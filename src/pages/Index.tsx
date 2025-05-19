@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,8 +7,7 @@ import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
-  Volume2, VolumeX, Chrome, Window, Screenshot,
-  Clap, Peace, Pinch, HandMetal, Settings
+  Volume2, VolumeX, Chrome, LayoutDashboard, Camera, HandMetal, PanelLeft, Minimize, Settings
 } from "lucide-react";
 
 const Index = () => {
@@ -214,27 +212,27 @@ const Index = () => {
     },
     {
       id: "openChrome",
-      title: "Clap",
-      description: "Open Chrome browser with a simple clap gesture.",
-      icon: <Clap className="w-12 h-12 text-neon-purple" />,
+      title: "Hand Metal Gesture",
+      description: "Open Chrome browser with a hand metal gesture.",
+      icon: <HandMetal className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('clap'),
       gestureType: ['clap'],
       status: gestureStatus.openChrome || "Waiting for gesture..."
     },
     {
       id: "closeWindow",
-      title: "Peace Sign",
-      description: "Close the currently active window with a peace sign.",
-      icon: <Peace className="w-12 h-12 text-neon-purple" />,
+      title: "Panel Left Gesture",
+      description: "Close the currently active window with a panel left gesture.",
+      icon: <PanelLeft className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('peace'),
       gestureType: ['peace'],
       status: gestureStatus.closeWindow || "Waiting for gesture..."
     },
     {
       id: "screenshot",
-      title: "Pinch",
-      description: "Take a screenshot with a pinching gesture.",
-      icon: <Pinch className="w-12 h-12 text-neon-purple" />,
+      title: "Minimize Gesture",
+      description: "Take a screenshot with a minimizing gesture.",
+      icon: <Minimize className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('pinch'),
       gestureType: ['pinch'],
       status: gestureStatus.screenshot || "Waiting for gesture..."
@@ -466,7 +464,7 @@ const Index = () => {
       </footer>
 
       {/* Add global styles for the brightness filter */}
-      <style jsx="true">{`
+      <style>{`
         :root {
           --brightness: ${currentBrightness};
         }
