@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/use-toast";
 import Navigation from "@/components/Navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 const Pricing = () => {
   const [annual, setAnnual] = useState(false);
@@ -20,6 +19,16 @@ const Pricing = () => {
       toast({
         title: "Please sign in",
         description: "You need to be signed in to subscribe to a plan.",
+      });
+      return;
+    }
+    
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      toast({
+        variant: "destructive",
+        title: "Supabase not configured",
+        description: "Please connect to Supabase using the green button in the top-right corner.",
       });
       return;
     }
@@ -96,6 +105,16 @@ const Pricing = () => {
   ];
 
   const handleManageSubscription = async () => {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      toast({
+        variant: "destructive",
+        title: "Supabase not configured",
+        description: "Please connect to Supabase using the green button in the top-right corner.",
+      });
+      return;
+    }
+    
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');

@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
 interface AuthContextProps {
@@ -29,6 +28,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const getSession = async () => {
       setIsLoading(true);
+      
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase is not configured. Authentication will not work.');
+        setIsLoading(false);
+        return;
+      }
+      
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -46,26 +53,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        setSession(session);
-        
-        if (session?.user) {
-          await checkSubscription();
-        } else {
-          setIsSubscribed(false);
-          setSubscriptionTier(null);
+    // Only set up the auth state change listener if Supabase is configured
+    if (isSupabaseConfigured()) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          setUser(session?.user ?? null);
+          setSession(session);
+          
+          if (session?.user) {
+            await checkSubscription();
+          } else {
+            setIsSubscribed(false);
+            setSubscriptionTier(null);
+          }
         }
-      }
-    );
+      );
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      toast({
+        variant: "destructive",
+        title: "Supabase not configured",
+        description: "Please connect to Supabase using the green button in the top-right corner.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -94,6 +114,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string) => {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      toast({
+        variant: "destructive",
+        title: "Supabase not configured",
+        description: "Please connect to Supabase using the green button in the top-right corner.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signUp({ email, password });
@@ -121,6 +151,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      toast({
+        variant: "destructive",
+        title: "Supabase not configured",
+        description: "Please connect to Supabase using the green button in the top-right corner.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
@@ -150,9 +190,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const checkSubscription = async () => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured()) return;
     
     try {
+      // Mock function for subscription data when Supabase isn't configured
+      if (!isSupabaseConfigured()) {
+        const mockData = { subscribed: false, subscription_tier: null };
+        setIsSubscribed(mockData.subscribed);
+        setSubscriptionTier(mockData.subscription_tier);
+        return mockData;
+      }
+      
       const { data, error } = await supabase.functions.invoke('check-subscription');
       if (error) {
         console.error('Error checking subscription:', error);
