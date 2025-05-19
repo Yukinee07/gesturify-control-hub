@@ -7,6 +7,7 @@ import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle } from "lucide-react";
+
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
@@ -220,8 +221,8 @@ const Index = () => {
   };
   const gestureSections = [{
     id: "brightness",
-    title: "Hand Slide Up/Down",
-    description: "Control screen brightness with a simple hand movement.",
+    title: "Change Brightness",
+    description: "Control Screen Brightness with Simple Hand Movement.",
     icon: <ArrowUp className="w-12 h-12 text-neon-purple" />,
     gestureDemo: () => gestureDetection.simulateGestureDetection('slideUp'),
     gestureType: ['slideUp', 'slideDown'],
@@ -229,32 +230,16 @@ const Index = () => {
     value: currentBrightness
   }, {
     id: "volume",
-    title: "Hand Slide Right/Left",
-    description: "Increase or decrease volume with horizontal hand movements.",
+    title: "Change Audio",
+    description: "Increase or decrease volume with thumbs up or down.",
     icon: <Volume2 className="w-12 h-12 text-neon-purple" />,
     gestureDemo: () => gestureDetection.simulateGestureDetection('slideRight'),
     gestureType: ['slideLeft', 'slideRight'],
     status: gestureStatus.volume || "Waiting for gesture...",
     value: currentVolume
   }, {
-    id: "openChrome",
-    title: "Peace Sign",
-    description: "Open Chrome browser with a peace sign gesture.",
-    icon: <HandMetal className="w-12 h-12 text-neon-purple" />,
-    gestureDemo: () => gestureDetection.simulateGestureDetection('clap'),
-    gestureType: ['clap'],
-    status: gestureStatus.openChrome || "Waiting for gesture..."
-  }, {
-    id: "closeWindow",
-    title: "Clap",
-    description: "Close the currently active window with a clap gesture.",
-    icon: <PanelLeft className="w-12 h-12 text-neon-purple" />,
-    gestureDemo: () => gestureDetection.simulateGestureDetection('peace'),
-    gestureType: ['peace'],
-    status: gestureStatus.closeWindow || "Waiting for gesture..."
-  }, {
     id: "screenshot",
-    title: "Pinch",
+    title: "Take Screenshot",
     description: "Take a screenshot with a pinching gesture.",
     icon: <Camera className="w-12 h-12 text-neon-purple" />,
     gestureDemo: () => gestureDetection.simulateGestureDetection('pinch'),
@@ -283,32 +268,34 @@ const Index = () => {
   };
 
   // Pricing plans data
-  const pricingPlans = [{
-    name: "Free",
-    price: "$0",
-    description: "Basic gesture controls for personal use",
-    features: ["5 built-in gestures", "Basic brightness and volume control", "Chrome browser integration", "Community support"],
-    buttonText: "Get Started",
-    buttonVariant: "outline",
-    recommended: false
-  }, {
-    name: "Pro",
-    price: "$9.99",
-    period: "monthly",
-    description: "Advanced controls for power users",
-    features: ["Everything in Free", "Custom gesture creation", "Advanced application control", "Priority support", "Multiple device profiles"],
-    buttonText: "Upgrade Now",
-    buttonVariant: "default",
-    recommended: true
-  }, {
-    name: "Enterprise",
-    price: "Contact Us",
-    description: "Custom solutions for organizations",
-    features: ["Everything in Pro", "Custom integration development", "Team management", "Dedicated account manager", "Training sessions"],
-    buttonText: "Contact Sales",
-    buttonVariant: "outline",
-    recommended: false
-  }];
+  const pricingPlans = [
+    {
+      name: "Free",
+      price: "$0",
+      description: "Basic gesture controls for personal use",
+      features: ["5 built-in gestures", "Basic brightness and volume control", "Chrome browser integration", "Community support"],
+      buttonText: "Get Started",
+      buttonVariant: "outline",
+      recommended: false
+    }, {
+      name: "Pro",
+      price: "$9.99",
+      period: "monthly",
+      description: "Advanced controls for power users",
+      features: ["Everything in Free", "Custom gesture creation", "Advanced application control", "Priority support", "Multiple device profiles"],
+      buttonText: "Upgrade Now",
+      buttonVariant: "default",
+      recommended: true
+    }, {
+      name: "Enterprise",
+      price: "Contact Us",
+      description: "Custom solutions for organizations",
+      features: ["Everything in Pro", "Custom integration development", "Team management", "Dedicated account manager", "Training sessions"],
+      buttonText: "Contact Sales",
+      buttonVariant: "outline",
+      recommended: false
+    }
+  ];
   return <div className="min-h-screen bg-black text-white overflow-x-hidden relative">
       {/* Custom cursor gradient - always visible */}
       <div ref={cursorRef} className="fixed pointer-events-none w-64 h-64 rounded-full bg-gradient-radial from-neon-purple/30 to-transparent -translate-x-1/2 -translate-y-1/2 z-0 blur-lg" />
@@ -405,9 +392,18 @@ const Index = () => {
               <p className="text-xl text-gray-300 mb-8 text-center md:text-left">
                 Define custom gestures and assign them to any action you want. Take control of your device like never before.
               </p>
-              <Button onClick={handleCustomGestureTool} className="bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300">
-                Try Now
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button onClick={handleCustomGestureTool} className="bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300">
+                  Try Now
+                </Button>
+                <a 
+                  href="#pricing" 
+                  onClick={scrollToPricing} 
+                  className="inline-flex items-center text-neon-purple hover:text-neon-pink transition-colors"
+                >
+                  View more &rarr;
+                </a>
+              </div>
             </div>
             <div className="w-full md:w-1/2 flex justify-center">
               <div className="feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300">
