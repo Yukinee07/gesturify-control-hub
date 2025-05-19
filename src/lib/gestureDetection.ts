@@ -22,6 +22,7 @@ class GestureDetection {
   private isRunning: boolean = false;
   private options: GestureDetectionOptions = {};
   private mockGestureTimeout: NodeJS.Timeout | null = null;
+  private lastGesture: GestureType = 'none';
 
   async requestPermission(): Promise<boolean> {
     try {
@@ -66,6 +67,7 @@ class GestureDetection {
     }
     
     this.isRunning = false;
+    this.lastGesture = 'none';
     console.log("Gesture detection stopped");
   }
 
@@ -78,13 +80,74 @@ class GestureDetection {
       clearTimeout(this.mockGestureTimeout);
     }
     
+    // Store the gesture so we can prevent rapid firing of the same gesture
+    this.lastGesture = gesture;
+    
     // Simulate processing time
     this.mockGestureTimeout = setTimeout(() => {
       if (this.options.onGestureDetected) {
         this.options.onGestureDetected(gesture);
       }
       this.mockGestureTimeout = null;
+      // Reset last gesture after a short delay
+      setTimeout(() => {
+        this.lastGesture = 'none';
+      }, 1000);
     }, delay);
+  }
+
+  // Helper methods for specific gesture actions
+  adjustBrightness(direction: 'up' | 'down') {
+    // In a real app, we would use the Screen Brightness API
+    // For demo purposes, we'll use a CSS filter to simulate brightness change
+    const htmlElement = document.documentElement;
+    let brightness = parseFloat(htmlElement.style.getPropertyValue('--brightness') || '1');
+    
+    brightness = direction === 'up' 
+      ? Math.min(brightness + 0.1, 1.5)
+      : Math.max(brightness - 0.1, 0.5);
+    
+    htmlElement.style.setProperty('--brightness', brightness.toString());
+    document.body.style.filter = `brightness(${brightness})`;
+    
+    return brightness;
+  }
+
+  adjustVolume(direction: 'up' | 'down') {
+    // In a real app, we would integrate with the system volume
+    // For demo purposes, we'll use any audio elements on the page
+    const audios = document.querySelectorAll('audio, video');
+    audios.forEach(audio => {
+      const element = audio as HTMLMediaElement;
+      let volume = element.volume;
+      
+      volume = direction === 'up'
+        ? Math.min(volume + 0.1, 1.0)
+        : Math.max(volume - 0.1, 0.0);
+      
+      element.volume = volume;
+    });
+    
+    // Return current volume level of first audio element, or 0 if none found
+    return audios.length > 0 ? (audios[0] as HTMLMediaElement).volume : 0;
+  }
+
+  openChrome() {
+    // In a real app, we would use system APIs to open Chrome
+    // For demo purposes, we'll just open a new window to chrome.com
+    window.open('https://www.google.com/chrome/', '_blank');
+  }
+
+  closeWindow() {
+    // In a real app, we would use system APIs to close the current window
+    // For demo purposes, we'll simulate this with an alert
+    alert('Peace gesture detected. In a real app, this would close the current window.');
+  }
+
+  takeScreenshot() {
+    // In a real app, we would use system APIs to capture a screenshot
+    // For demo purposes, we'll simulate this with an alert
+    alert('Pinch gesture detected. In a real app, this would capture a screenshot.');
   }
 }
 
