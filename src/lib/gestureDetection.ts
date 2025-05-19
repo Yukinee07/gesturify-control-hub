@@ -18,16 +18,23 @@ interface GestureDetectionOptions {
 }
 
 class GestureDetection {
-  private stream: MediaStream | null = null;
+  public stream: MediaStream | null = null;
   private isRunning: boolean = false;
   private options: GestureDetectionOptions = {};
   private mockGestureTimeout: NodeJS.Timeout | null = null;
   private lastGesture: GestureType = 'none';
+  private continuousGestureTimer: NodeJS.Timeout | null = null;
+  private brightnessValue: number = 1.0;
+  private volumeValue: number = 0.5;
 
   async requestPermission(): Promise<boolean> {
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      // We don't actually show the video, just get permission and access
+      this.stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
       // In a real app, we would initialize the hand tracking library here
       return true;
     } catch (error) {
@@ -66,6 +73,11 @@ class GestureDetection {
       this.mockGestureTimeout = null;
     }
     
+    if (this.continuousGestureTimer) {
+      clearInterval(this.continuousGestureTimer);
+      this.continuousGestureTimer = null;
+    }
+    
     this.isRunning = false;
     this.lastGesture = 'none';
     console.log("Gesture detection stopped");
@@ -81,6 +93,12 @@ class GestureDetection {
     }
     
     // Store the gesture so we can prevent rapid firing of the same gesture
+    if (this.lastGesture === gesture) {
+      // If the same gesture is repeated, simulate a continuous gesture
+      this.simulateContinuousGesture(gesture);
+      return;
+    }
+    
     this.lastGesture = gesture;
     
     // Simulate processing time
@@ -89,11 +107,45 @@ class GestureDetection {
         this.options.onGestureDetected(gesture);
       }
       this.mockGestureTimeout = null;
-      // Reset last gesture after a short delay
-      setTimeout(() => {
-        this.lastGesture = 'none';
-      }, 1000);
+      
+      // For continuous gestures like brightness/volume, start continuous simulation
+      if (['slideUp', 'slideDown', 'slideLeft', 'slideRight'].includes(gesture)) {
+        this.simulateContinuousGesture(gesture);
+      } else {
+        // Reset last gesture after a short delay for non-continuous gestures
+        setTimeout(() => {
+          this.lastGesture = 'none';
+        }, 1000);
+      }
     }, delay);
+  }
+  
+  // Simulate continuous gestures like brightness/volume adjustments
+  simulateContinuousGesture(gesture: GestureType) {
+    // Clear any existing continuous simulation
+    if (this.continuousGestureTimer) {
+      clearInterval(this.continuousGestureTimer);
+      this.continuousGestureTimer = null;
+    }
+    
+    // Start continuous simulation for certain gesture types
+    if (['slideUp', 'slideDown', 'slideLeft', 'slideRight'].includes(gesture)) {
+      // Fire the gesture multiple times to simulate continuous adjustment
+      this.continuousGestureTimer = setInterval(() => {
+        if (this.options.onGestureDetected) {
+          this.options.onGestureDetected(gesture);
+        }
+      }, 1000); // Repeat every second
+      
+      // Stop after a few seconds to simulate gesture ending
+      setTimeout(() => {
+        if (this.continuousGestureTimer) {
+          clearInterval(this.continuousGestureTimer);
+          this.continuousGestureTimer = null;
+          this.lastGesture = 'none';
+        }
+      }, 5000);
+    }
   }
 
   // Helper methods for specific gesture actions
@@ -101,12 +153,13 @@ class GestureDetection {
     // In a real app, we would use the Screen Brightness API
     // For demo purposes, we'll use a CSS filter to simulate brightness change
     const htmlElement = document.documentElement;
-    let brightness = parseFloat(htmlElement.style.getPropertyValue('--brightness') || '1');
+    let brightness = this.brightnessValue;
     
     brightness = direction === 'up' 
       ? Math.min(brightness + 0.1, 1.5)
       : Math.max(brightness - 0.1, 0.5);
     
+    this.brightnessValue = brightness;
     htmlElement.style.setProperty('--brightness', brightness.toString());
     document.body.style.filter = `brightness(${brightness})`;
     
@@ -117,19 +170,20 @@ class GestureDetection {
     // In a real app, we would integrate with the system volume
     // For demo purposes, we'll use any audio elements on the page
     const audios = document.querySelectorAll('audio, video');
+    let volume = this.volumeValue;
+    
+    volume = direction === 'up'
+      ? Math.min(volume + 0.1, 1.0)
+      : Math.max(volume - 0.1, 0.0);
+    
+    this.volumeValue = volume;
+    
     audios.forEach(audio => {
       const element = audio as HTMLMediaElement;
-      let volume = element.volume;
-      
-      volume = direction === 'up'
-        ? Math.min(volume + 0.1, 1.0)
-        : Math.max(volume - 0.1, 0.0);
-      
       element.volume = volume;
     });
     
-    // Return current volume level of first audio element, or 0 if none found
-    return audios.length > 0 ? (audios[0] as HTMLMediaElement).volume : 0;
+    return volume;
   }
 
   openChrome() {
@@ -149,7 +203,17 @@ class GestureDetection {
     // For demo purposes, we'll simulate this with an alert
     alert('Pinch gesture detected. In a real app, this would capture a screenshot.');
   }
+
+  // Current values getters
+  getCurrentBrightness() {
+    return this.brightnessValue;
+  }
+  
+  getCurrentVolume() {
+    return this.volumeValue;
+  }
 }
 
 // Export a singleton instance
 export const gestureDetection = new GestureDetection();
+

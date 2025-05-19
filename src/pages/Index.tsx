@@ -17,10 +17,14 @@ const Index = () => {
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
+  const [gestureStatus, setGestureStatus] = useState<{[key: string]: string}>({});
+  const [currentBrightness, setCurrentBrightness] = useState(1);
+  const [currentVolume, setCurrentVolume] = useState(0.5);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const cursorRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Track mouse movement for cursor gradient effect
   useEffect(() => {
@@ -32,7 +36,7 @@ const Index = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Track scroll position for gradient and parallax effects
+  // Track scroll position for parallax effects
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -59,43 +63,71 @@ const Index = () => {
     };
   }, [permissionGranted]);
 
+  // Update video stream if permission granted
+  useEffect(() => {
+    if (permissionGranted && videoRef.current && gestureDetection.stream) {
+      videoRef.current.srcObject = gestureDetection.stream;
+    }
+  }, [permissionGranted]);
+
   // Handle gesture detection
   const handleGestureDetected = (gesture: GestureType) => {
     setActiveGesture(gesture);
     console.log("Gesture detected:", gesture);
+    
+    // Update status for the relevant gesture section
+    let statusUpdate = "";
 
     // Apply the corresponding action based on the detected gesture
     switch (gesture) {
       case 'slideUp':
-        const brightnessUp = gestureDetection.adjustBrightness('up');
+        const newBrightnessUp = Math.min(currentBrightness + 0.1, 1.5);
+        setCurrentBrightness(newBrightnessUp);
+        gestureDetection.adjustBrightness('up');
+        statusUpdate = `Increasing brightness to ${Math.round(newBrightnessUp * 100)}%`;
+        setGestureStatus(prev => ({...prev, brightness: statusUpdate}));
         toast({
           title: "Brightness Increased",
-          description: `Brightness set to ${Math.round(brightnessUp * 100)}%`,
+          description: `Brightness set to ${Math.round(newBrightnessUp * 100)}%`,
         });
         break;
       case 'slideDown':
-        const brightnessDown = gestureDetection.adjustBrightness('down');
+        const newBrightnessDown = Math.max(currentBrightness - 0.1, 0.5);
+        setCurrentBrightness(newBrightnessDown);
+        gestureDetection.adjustBrightness('down');
+        statusUpdate = `Decreasing brightness to ${Math.round(newBrightnessDown * 100)}%`;
+        setGestureStatus(prev => ({...prev, brightness: statusUpdate}));
         toast({
           title: "Brightness Decreased",
-          description: `Brightness set to ${Math.round(brightnessDown * 100)}%`,
+          description: `Brightness set to ${Math.round(newBrightnessDown * 100)}%`,
         });
         break;
       case 'slideRight':
-        const volumeUp = gestureDetection.adjustVolume('up');
+        const newVolumeUp = Math.min(currentVolume + 0.1, 1.0);
+        setCurrentVolume(newVolumeUp);
+        gestureDetection.adjustVolume('up');
+        statusUpdate = `Increasing volume to ${Math.round(newVolumeUp * 100)}%`;
+        setGestureStatus(prev => ({...prev, volume: statusUpdate}));
         toast({
           title: "Volume Increased",
-          description: `Volume set to ${Math.round(volumeUp * 100)}%`,
+          description: `Volume set to ${Math.round(newVolumeUp * 100)}%`,
         });
         break;
       case 'slideLeft':
-        const volumeDown = gestureDetection.adjustVolume('down');
+        const newVolumeDown = Math.max(currentVolume - 0.1, 0.0);
+        setCurrentVolume(newVolumeDown);
+        gestureDetection.adjustVolume('down');
+        statusUpdate = `Decreasing volume to ${Math.round(newVolumeDown * 100)}%`;
+        setGestureStatus(prev => ({...prev, volume: statusUpdate}));
         toast({
           title: "Volume Decreased",
-          description: `Volume set to ${Math.round(volumeDown * 100)}%`,
+          description: `Volume set to ${Math.round(newVolumeDown * 100)}%`,
         });
         break;
       case 'clap':
         gestureDetection.openChrome();
+        statusUpdate = "Opening Chrome browser";
+        setGestureStatus(prev => ({...prev, openChrome: statusUpdate}));
         toast({
           title: "Opening Chrome",
           description: "Launching Chrome browser",
@@ -103,6 +135,8 @@ const Index = () => {
         break;
       case 'peace':
         gestureDetection.closeWindow();
+        statusUpdate = "Peace sign detected - would close window";
+        setGestureStatus(prev => ({...prev, closeWindow: statusUpdate}));
         toast({
           title: "Window Close Gesture",
           description: "Close window gesture detected",
@@ -110,10 +144,15 @@ const Index = () => {
         break;
       case 'pinch':
         gestureDetection.takeScreenshot();
+        statusUpdate = "Pinch detected - would take screenshot";
+        setGestureStatus(prev => ({...prev, screenshot: statusUpdate}));
         toast({
           title: "Screenshot Gesture",
           description: "Screenshot gesture detected",
         });
+        break;
+      case 'none':
+        // No gesture detected
         break;
     }
 
@@ -159,7 +198,9 @@ const Index = () => {
       description: "Control screen brightness with a simple hand movement.",
       icon: <ArrowUp className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('slideUp'),
-      gestureType: ['slideUp', 'slideDown']
+      gestureType: ['slideUp', 'slideDown'],
+      status: gestureStatus.brightness || "Waiting for gesture...",
+      value: currentBrightness
     },
     {
       id: "volume",
@@ -167,7 +208,9 @@ const Index = () => {
       description: "Increase or decrease volume with horizontal hand movements.",
       icon: <Volume2 className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('slideRight'),
-      gestureType: ['slideLeft', 'slideRight']
+      gestureType: ['slideLeft', 'slideRight'],
+      status: gestureStatus.volume || "Waiting for gesture...",
+      value: currentVolume
     },
     {
       id: "openChrome",
@@ -175,7 +218,8 @@ const Index = () => {
       description: "Open Chrome browser with a simple clap gesture.",
       icon: <Clap className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('clap'),
-      gestureType: ['clap']
+      gestureType: ['clap'],
+      status: gestureStatus.openChrome || "Waiting for gesture..."
     },
     {
       id: "closeWindow",
@@ -183,7 +227,8 @@ const Index = () => {
       description: "Close the currently active window with a peace sign.",
       icon: <Peace className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('peace'),
-      gestureType: ['peace']
+      gestureType: ['peace'],
+      status: gestureStatus.closeWindow || "Waiting for gesture..."
     },
     {
       id: "screenshot",
@@ -191,7 +236,8 @@ const Index = () => {
       description: "Take a screenshot with a pinching gesture.",
       icon: <Pinch className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('pinch'),
-      gestureType: ['pinch']
+      gestureType: ['pinch'],
+      status: gestureStatus.screenshot || "Waiting for gesture..."
     },
   ];
 
@@ -213,21 +259,13 @@ const Index = () => {
       <div 
         ref={cursorRef} 
         className="fixed pointer-events-none w-64 h-64 rounded-full bg-gradient-radial from-neon-purple/30 to-transparent -translate-x-1/2 -translate-y-1/2 z-0 blur-lg"
-        style={{
-          opacity: Math.max(0, 1 - scrollY / 1000),
-        }}
       />
 
       {/* Hero Section */}
       <div className="relative min-h-screen flex flex-col">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-radial from-purple-900/20 to-transparent"></div>
-          <div 
-            className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent"
-            style={{ 
-              transform: `translateY(${scrollY * 0.1}px)` 
-            }}
-          ></div>
+          <div className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent"></div>
         </div>
 
         <Navigation />
@@ -278,10 +316,6 @@ const Index = () => {
             className={`container mx-auto px-4 py-24 flex flex-col md:flex-row items-center ${
               index % 2 !== 0 ? 'md:flex-row-reverse' : ''
             }`}
-            style={{ 
-              transform: `translateY(${Math.max(0, (scrollY - 500 * (index + 1)) * 0.1)}px)`,
-              opacity: Math.min(1, Math.max(0, 1 - Math.abs((scrollY - 500 * (index + 1)) / 500)))
-            }}
           >
             <div className="w-full md:w-1/2 mb-10 md:mb-0 text-center md:text-left">
               <div className="mb-6 transform hover:scale-110 transition-transform duration-300">{section.icon}</div>
@@ -310,13 +344,36 @@ const Index = () => {
               >
                 <div className="text-center p-8">
                   <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
-                  <p className="text-gray-400">
-                    {permissionGranted
-                      ? section.gestureType.includes(activeGesture as any)
-                        ? `${activeGesture} gesture detected!`
-                        : "Camera access granted! Try the gesture."
-                      : "Click 'Try This Gesture' to enable camera and test this gesture."}
-                  </p>
+                  {permissionGranted ? (
+                    <div className="relative">
+                      {section.id === 'brightness' && (
+                        <video 
+                          ref={videoRef}
+                          className="w-full h-48 object-cover rounded-lg mb-3"
+                          autoPlay
+                          playsInline
+                          muted
+                        />
+                      )}
+                      <div className="mb-3 text-white bg-black/50 p-2 rounded">
+                        <p className="font-mono text-sm">
+                          {section.status}
+                        </p>
+                      </div>
+                      {'value' in section && (
+                        <div className="w-full bg-gray-700 h-2 rounded-full mt-2">
+                          <div 
+                            className="bg-gradient-to-r from-neon-purple to-neon-pink h-full rounded-full"
+                            style={{ width: `${Math.round(section.value * 100)}%` }}
+                          ></div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">
+                      Click 'Try This Gesture' to enable camera and test this gesture.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -329,13 +386,7 @@ const Index = () => {
         id="custom-gestures"
         className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16"
       >
-        <div 
-          className="container mx-auto px-4 py-24 flex flex-col md:flex-row items-center"
-          style={{ 
-            transform: `translateY(${Math.max(0, (scrollY - 500 * 6) * 0.1)}px)`,
-            opacity: Math.min(1, Math.max(0, 1 - Math.abs((scrollY - 500 * 6) / 500)))
-          }}
-        >
+        <div className="container mx-auto px-4 py-24 flex flex-col md:flex-row items-center">
           <div className="w-full md:w-1/2 mb-10 md:mb-0 text-center md:text-left">
             <div className="mb-6 transform hover:scale-110 transition-transform duration-300">
               <Settings className="w-12 h-12 text-neon-purple" />
@@ -372,12 +423,7 @@ const Index = () => {
       {/* CTA Section */}
       <div className="bg-black py-20 px-4 relative">
         <div className="absolute inset-0 bg-gradient-radial from-purple-900/10 to-transparent opacity-60"></div>
-        <div 
-          className="container mx-auto text-center relative z-10 max-w-3xl"
-          style={{ 
-            transform: `translateY(${Math.max(0, (scrollY - 3000) * 0.05)}px)` 
-          }}
-        >
+        <div className="container mx-auto text-center relative z-10 max-w-3xl">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient glow">
             Ready to Control Your Device with Gestures?
           </h2>
@@ -422,7 +468,7 @@ const Index = () => {
       {/* Add global styles for the brightness filter */}
       <style jsx="true">{`
         :root {
-          --brightness: 1;
+          --brightness: ${currentBrightness};
         }
         
         /* Smooth scrolling for the entire page */
