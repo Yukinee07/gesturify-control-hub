@@ -6,7 +6,8 @@ import Navigation from "@/components/Navigation";
 import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle, X } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle } from "lucide-react";
+
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType | null>(null);
@@ -349,74 +350,106 @@ const Index = () => {
       </div>
 
       {/* Gesture Control Sections with consistent spacing and glow effect */}
-      {gestureSections.map((section, index) => <div key={section.id} id={section.id} className="min-h-screen flex items-center justify-center relative scroll-mt-16 py-24 px-4 rounded-none bg-transparent">
-          <div className={`container mx-auto flex flex-col md:flex-row items-center ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} gap-16`}>
-            <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
-              <div className="mb-6 transform hover:scale-110 transition-transform duration-300">{section.icon}</div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">{section.title}</h2>
-              <p className="text-xl text-gray-300 mb-8 text-center md:text-left">{section.description}</p>
-              <Button onClick={() => {
-            if (!permissionGranted) {
-              requestCameraPermission(section.id);
-            } else {
-              setActiveVideoId(section.id);
-              section.gestureDemo();
-            }
-          }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple' : ''}`}>
-                Try This Gesture
-              </Button>
-            </div>
-            <div className="w-full md:w-1/2 flex justify-center">
-              <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
-                <div className="text-center p-8 w-full">
-                  <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
-                  {permissionGranted && activeVideoId === section.id ? <div className="relative zoom-in">
-                      <video ref={videoRef} className="w-full h-48 object-cover rounded-lg mb-3" autoPlay playsInline muted />
-                      <div className="mb-3 text-white bg-black/50 p-2 rounded">
-                        <p className="font-mono text-sm">
-                          {section.status}
-                        </p>
+      {gestureSections.map((section, index) => (
+        <div 
+          key={section.id} 
+          id={section.id} 
+          className="min-h-screen flex items-center justify-center relative scroll-mt-16 py-24 px-4 md:px-8"
+        >
+          <div className="container mx-auto rounded-xl py-5 feature-box-container hover:feature-box-glow">
+            <div className={`flex flex-col md:flex-row items-center ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} gap-16 p-8`}>
+              <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
+                <div className="mb-6 transform hover:scale-110 transition-transform duration-300">{section.icon}</div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">{section.title}</h2>
+                <p className="text-xl text-gray-300 mb-8 text-center md:text-left">{section.description}</p>
+                <Button 
+                  onClick={() => {
+                    if (!permissionGranted) {
+                      requestCameraPermission(section.id);
+                    } else {
+                      setActiveVideoId(section.id);
+                      section.gestureDemo();
+                    }
+                  }} 
+                  className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${
+                    section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple' : ''
+                  }`}
+                >
+                  Try This Gesture
+                </Button>
+              </div>
+              <div className="w-full md:w-1/2 flex justify-center">
+                <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${
+                  section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''
+                }`}>
+                  <div className="text-center p-8 w-full">
+                    <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
+                    {permissionGranted && activeVideoId === section.id ? (
+                      <div className="relative zoom-in">
+                        <video 
+                          ref={videoRef} 
+                          className="w-full h-48 object-cover rounded-lg mb-3" 
+                          autoPlay 
+                          playsInline 
+                          muted 
+                        />
+                        <div className="mb-3 text-white bg-black/50 p-2 rounded">
+                          <p className="font-mono text-sm">
+                            {section.status}
+                          </p>
+                        </div>
+                        {'value' in section && (
+                          <div className="w-full bg-gray-700 h-2 rounded-full mt-2">
+                            <div 
+                              className="bg-gradient-to-r from-neon-purple to-neon-pink h-full rounded-full" 
+                              style={{
+                                width: `${Math.round(section.value * 100)}%`
+                              }}
+                            ></div>
+                          </div>
+                        )}
                       </div>
-                      {'value' in section && <div className="w-full bg-gray-700 h-2 rounded-full mt-2">
-                          <div className="bg-gradient-to-r from-neon-purple to-neon-pink h-full rounded-full" style={{
-                    width: `${Math.round(section.value * 100)}%`
-                  }}></div>
-                        </div>}
-                    </div> : <p className="text-gray-400">
-                      Click 'Try This Gesture' to enable camera and test this gesture.
-                    </p>}
+                    ) : (
+                      <p className="text-gray-400">
+                        Click 'Try This Gesture' to enable camera and test this gesture.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>)}
+        </div>
+      ))}
 
       {/* Custom Gesture Tool Section */}
-      <div id="custom-gestures" className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16 py-24 px-4">
-        <div className="container mx-auto flex flex-col md:flex-row items-center gap-16">
-          <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
-            <div className="mb-6 transform hover:scale-110 transition-transform duration-300">
-              <Settings className="w-12 h-12 text-neon-purple" />
+      <div id="custom-gestures" className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16 py-24 px-4 md:px-8">
+        <div className="container mx-auto rounded-xl py-5 feature-box-container hover:feature-box-glow">
+          <div className="flex flex-col md:flex-row items-center gap-16 p-8">
+            <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
+              <div className="mb-6 transform hover:scale-110 transition-transform duration-300">
+                <Settings className="w-12 h-12 text-neon-purple" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">Create Your Own Gesture Tool</h2>
+              <p className="text-xl text-gray-300 mb-8 text-center md:text-left">
+                Define custom gestures and assign them to any action you want. Take control of your device like never before.
+              </p>
+              <Button onClick={handleCustomGestureTool} className="bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300">
+                Try Now
+              </Button>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">Create Your Own Gesture Tool</h2>
-            <p className="text-xl text-gray-300 mb-8 text-center md:text-left">
-              Define custom gestures and assign them to any action you want. Take control of your device like never before.
-            </p>
-            <Button onClick={handleCustomGestureTool} className="bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300">
-              Try Now
-            </Button>
-          </div>
-          <div className="w-full md:w-1/2 flex justify-center">
-            <div className="feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300">
-              <div className="text-center p-8">
-                <h3 className="text-xl font-semibold mb-4">Custom Gesture Creator</h3>
-                <p className="text-gray-400">
-                  Design your perfect workflow with personalized hand gestures tailored to your needs.
-                </p>
-                <div className="mt-6 flex justify-center space-x-4">
-                  <HandMetal className="w-8 h-8 text-neon-purple" />
-                  <ArrowRight className="w-8 h-8 text-gray-500" />
-                  <Settings className="w-8 h-8 text-neon-purple" />
+            <div className="w-full md:w-1/2 flex justify-center">
+              <div className="feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-transform hover:scale-105 duration-300">
+                <div className="text-center p-8">
+                  <h3 className="text-xl font-semibold mb-4">Custom Gesture Creator</h3>
+                  <p className="text-gray-400">
+                    Design your perfect workflow with personalized hand gestures tailored to your needs.
+                  </p>
+                  <div className="mt-6 flex justify-center space-x-4">
+                    <HandMetal className="w-8 h-8 text-neon-purple" />
+                    <ArrowRight className="w-8 h-8 text-gray-500" />
+                    <Settings className="w-8 h-8 text-neon-purple" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -425,7 +458,7 @@ const Index = () => {
       </div>
 
       {/* Pricing Section */}
-      <div id="pricing" ref={pricingSectionRef} className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16 py-24 px-4">
+      <div id="pricing" ref={pricingSectionRef} className="min-h-screen flex items-center justify-center relative bg-black scroll-mt-16 py-24 px-4 md:px-8">
         <div className="container mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6 text-gradient glow">Pricing Plans</h2>
@@ -435,10 +468,18 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {pricingPlans.map((plan, index) => <div key={index} className={`feature-box neo-blur rounded-xl p-8 flex flex-col h-full transition-all duration-300 hover:scale-105 ${plan.recommended ? 'border-neon-purple ring-2 ring-neon-purple/50 relative' : ''}`}>
-                {plan.recommended && <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-neon-purple to-neon-pink px-4 py-1 rounded-full text-sm font-medium">
+            {pricingPlans.map((plan, index) => (
+              <div 
+                key={index} 
+                className={`feature-box neo-blur rounded-xl p-8 flex flex-col h-full transition-all duration-300 hover:feature-box-glow hover:scale-105 ${
+                  plan.recommended ? 'border-neon-purple ring-2 ring-neon-purple/50 relative' : ''
+                }`}
+              >
+                {plan.recommended && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-neon-purple to-neon-pink px-4 py-1 rounded-full text-sm font-medium">
                     Recommended
-                  </div>}
+                  </div>
+                )}
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                 <div className="mb-4">
                   <span className="text-4xl font-bold">{plan.price}</span>
@@ -447,16 +488,24 @@ const Index = () => {
                 <p className="text-gray-300 mb-6">{plan.description}</p>
                 <div className="mb-8 flex-grow">
                   <ul className="space-y-3">
-                    {plan.features.map((feature, idx) => <li key={idx} className="flex items-start">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start">
                         <CheckCircle className="w-5 h-5 text-neon-purple mr-2 flex-shrink-0 mt-0.5" />
                         <span>{feature}</span>
-                      </li>)}
+                      </li>
+                    ))}
                   </ul>
                 </div>
-                <Button variant={plan.buttonVariant as "outline" | "default"} className={`w-full ${plan.buttonVariant === "default" ? "bg-gradient-to-r from-neon-purple to-neon-pink" : "border-white/20"}`}>
+                <Button 
+                  variant={plan.buttonVariant as "outline" | "default"} 
+                  className={`w-full ${
+                    plan.buttonVariant === "default" ? "bg-gradient-to-r from-neon-purple to-neon-pink" : "border-white/20"
+                  }`}
+                >
                   {plan.buttonText}
                 </Button>
-              </div>)}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -506,4 +555,5 @@ const Index = () => {
       `}</style>
     </div>;
 };
+
 export default Index;
