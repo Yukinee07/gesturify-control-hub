@@ -1,3 +1,4 @@
+
 // This is a placeholder for the actual gesture detection library
 // We would use a real hand tracking library like Handpose or MediaPipe in production
 
