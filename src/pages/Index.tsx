@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { 
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
   Volume2, VolumeX, Chrome, AppWindow, 
-  Clapper, Space, Pin, HandMetal, Settings
+  Clapperboard, Space, Pin, HandMetal, Settings
 } from "lucide-react";
 
 const Index = () => {
@@ -173,7 +173,7 @@ const Index = () => {
       id: "openChrome",
       title: "Clap",
       description: "Open Chrome browser with a simple clap gesture.",
-      icon: <Clapper className="w-12 h-12 text-neon-purple" />,
+      icon: <Clapperboard className="w-12 h-12 text-neon-purple" />,
       gestureDemo: () => gestureDetection.simulateGestureDetection('clap'),
       gestureType: ['clap']
     },
