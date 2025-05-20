@@ -76,24 +76,24 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
           </div>
         </div>
 
-        {/* Circular slider thumb - centered and smaller */}
+        {/* Circular slider thumb - now centered vertically and horizontally */}
         <motion.div 
           className="absolute top-1/2 -translate-y-1/2 z-10"
           animate={{ 
-            x: `calc(${normalizedValue}% - 10px)`,
+            x: `calc(${normalizedValue}% - 8px)`,  // Adjusted for smaller thumb
             scale: isActive ? 1.1 : 1
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
           <div 
-            className={`w-5 h-5 flex items-center justify-center rounded-full 
+            className={`w-4 h-4 flex items-center justify-center rounded-full 
               bg-gradient-to-r from-neon-purple to-neon-pink 
               ${isActive ? 'animate-pulse shadow-lg shadow-neon-purple/50' : ''}
               transition-all duration-300`}
           >
-            {/* Circular thumb that changes color based on brightness - smaller */}
+            {/* Circular thumb that changes color based on brightness - smaller and centered */}
             <div 
-              className="w-3 h-3 rounded-full transition-colors duration-300"
+              className="w-2 h-2 rounded-full transition-colors duration-300"
               style={{ backgroundColor: getBrightnessColor() }}
             ></div>
           </div>
