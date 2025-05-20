@@ -10,7 +10,7 @@ import Logo from "@/components/Logo";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle, ThumbsUp, ThumbsDown } from "lucide-react";
 import { ThumbsLeft } from "@/components/icons/ThumbsLeft";
 import { ThumbsRight } from "@/components/icons/ThumbsRight";
-import CurvedSlider from "@/components/CurvedSlider";
+import BrightnessSlider from "@/components/BrightnessSlider";
 import AudioPlayer from "@/components/AudioPlayer";
 
 const Index = () => {
@@ -276,7 +276,7 @@ const Index = () => {
   const gestureSections = [{
     id: "brightness",
     title: "Change Brightness",
-    description: "Control Screen Brightness with Hand Gestures. Move your hand along the curve to adjust brightness levels.",
+    description: "Control Screen Brightness with Hand Gestures. Move your hand up and down to adjust brightness levels.",
     icon: <ArrowUp className="w-12 h-12 text-neon-purple" />,
     gestureDemo: () => {
       if (!trackBrightnessWithCursor) {
@@ -288,7 +288,7 @@ const Index = () => {
     gestureType: ['slideUp', 'slideDown', 'thumbLeft', 'thumbRight'],
     status: gestureStatus.brightness || "Waiting for gesture...",
     value: currentBrightness,
-    instructions: "Move hand along curve to adjust brightness"
+    instructions: "Move hand up/down to adjust brightness"
   }, {
     id: "volume",
     title: "Change Audio",
@@ -403,17 +403,17 @@ const Index = () => {
                 <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">{section.title}</h2>
                 <p className="text-xl text-gray-300 mb-8 text-center md:text-left">{section.description}</p>
                 <Button onClick={() => {
-              if (!permissionGranted) {
-                requestCameraPermission(section.id);
-              } else {
-                setActiveVideoId(section.id);
-                if (section.id === "brightness") {
-                  setTrackBrightnessWithCursor(!trackBrightnessWithCursor);
-                } else {
-                  section.gestureDemo();
-                }
-              }
-            }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${section.gestureType.includes(activeGesture as any) || section.id === "brightness" && trackBrightnessWithCursor ? 'ring-4 ring-neon-purple' : ''}`}>
+                  if (!permissionGranted) {
+                    requestCameraPermission(section.id);
+                  } else {
+                    setActiveVideoId(section.id);
+                    if (section.id === "brightness") {
+                      setTrackBrightnessWithCursor(!trackBrightnessWithCursor);
+                    } else {
+                      section.gestureDemo();
+                    }
+                  }
+                }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${section.gestureType.includes(activeGesture as any) || section.id === "brightness" && trackBrightnessWithCursor ? 'ring-4 ring-neon-purple' : ''}`}>
                   {section.id === "brightness" && trackBrightnessWithCursor ? "Stop Tracking" : "Try This Gesture"}
                 </Button>
               </div>
@@ -421,12 +421,12 @@ const Index = () => {
                 {section.id === "brightness" ? (
                   <div ref={brightnessContainerRef} className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
                     <div className="absolute inset-0 bg-gradient-to-b from-neon-purple/5 via-black/20 to-black/40 transition-opacity duration-500" style={{
-                opacity: currentBrightness,
-                background: `linear-gradient(to bottom, rgba(139, 92, 246, ${0.1 * currentBrightness}), rgba(0, 0, 0, ${0.4 - 0.2 * currentBrightness}))`
-              }}></div>
+                      opacity: currentBrightness,
+                      background: `linear-gradient(to bottom, rgba(139, 92, 246, ${0.1 * currentBrightness}), rgba(0, 0, 0, ${0.4 - 0.2 * currentBrightness}))`
+                    }}></div>
                     
                     <div className="relative z-10 flex items-center justify-center h-full w-full">
-                      <CurvedSlider 
+                      <BrightnessSlider 
                         value={currentBrightness * 100} 
                         min={50} 
                         max={150} 
