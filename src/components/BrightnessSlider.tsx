@@ -51,7 +51,7 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full relative">
+    <div className="flex flex-col items-center justify-center h-full">
       <div 
         ref={sliderRef}
         className="relative h-8 w-64 bg-gray-800/50 rounded-full mx-auto cursor-pointer"
@@ -109,20 +109,20 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
         <motion.div 
           className={`absolute top-1/2 -translate-y-1/2 z-10 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           animate={{ 
-            x: `calc(${normalizedValue}% - 20px)`, // Center the thumb (half of its width)
+            x: `calc(${normalizedValue}% - 10px)`, // Centered smaller thumb
             scale: isDragging || isActive ? 1.1 : 1
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
           <div 
-            className={`w-10 h-10 flex items-center justify-center rounded-full 
+            className={`w-5 h-5 flex items-center justify-center rounded-full 
               bg-gradient-to-r from-neon-purple to-neon-pink 
               ${isActive ? 'animate-pulse shadow-lg shadow-neon-purple/50' : ''}
               transition-all duration-300`}
           >
             {/* Circular thumb that changes color based on brightness - smaller */}
             <div 
-              className="w-6 h-6 rounded-full transition-colors duration-300"
+              className="w-4 h-4 rounded-full transition-colors duration-300"
               style={{ backgroundColor: getBrightnessColor() }}
             ></div>
           </div>

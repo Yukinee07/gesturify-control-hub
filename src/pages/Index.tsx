@@ -7,7 +7,7 @@ import Navigation from "@/components/Navigation";
 import { gestureDetection, GestureType } from "@/lib/gestureDetection";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle, ThumbsUp, ThumbsDown } from "lucide-react";
+import { ArrowRight, ArrowDown, ArrowLeft, ArrowUp, Volume2, Chrome, Camera, HandMetal, Settings, CheckCircle } from "lucide-react";
 import { ThumbsLeft } from "@/components/icons/ThumbsLeft";
 import { ThumbsRight } from "@/components/icons/ThumbsRight";
 import BrightnessSlider from "@/components/BrightnessSlider";
@@ -25,7 +25,7 @@ const Index = () => {
     [key: string]: string;
   }>({});
   
-  // Initialize brightness to 100% (not 0)
+  // Initialize brightness to 100%
   const [currentBrightness, setCurrentBrightness] = useState(100);
   const [currentVolume, setCurrentVolume] = useState(0.5);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
@@ -60,7 +60,7 @@ const Index = () => {
         const containerHeight = containerRect.height;
         const relativeY = containerRect.bottom - e.clientY;
 
-        // Map to brightness range (50% to 150%)
+        // Map to brightness range (10% to 100%)
         let newBrightnessPercent = Math.max(10, Math.min(100, relativeY / containerHeight * 90 + 10));
         
         // Only update if there's a significant change to avoid constant updates
@@ -233,6 +233,7 @@ const Index = () => {
       setActiveGesture(null);
     }, 2000);
   };
+  
   const requestCameraPermission = async (sectionId: string) => {
     try {
       await gestureDetection.requestPermission();
@@ -267,6 +268,7 @@ const Index = () => {
       });
     }
   };
+  
   // Gesture sections with updated brightness section
   const gestureSections = [{
     id: "brightness",
@@ -302,6 +304,7 @@ const Index = () => {
     gestureType: ['pinch'],
     status: gestureStatus.screenshot || "Waiting for gesture..."
   }];
+  
   const handleCustomGestureTool = () => {
     if (!user) {
       navigate("/login");
@@ -316,6 +319,7 @@ const Index = () => {
       });
     }
   };
+  
   const scrollToPricing = (e: React.MouseEvent) => {
     e.preventDefault();
     pricingSectionRef.current?.scrollIntoView({
@@ -351,22 +355,21 @@ const Index = () => {
     recommended: false
   }];
   
-  // Camera display component
+  // Camera display component - redesigned to be at the center bottom
   const CameraFeed = () => {
     if (!permissionGranted) return null;
     
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-black/80 p-4 z-50">
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="w-1/3">
-            <p className="text-sm text-gray-400 mb-1">Camera Feed:</p>
-            <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden border border-neon-purple/30">
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center">
+        <div className="w-full max-w-3xl p-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-1/3 aspect-video bg-transparent rounded-lg overflow-hidden">
               <video 
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
                 muted 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-lg border border-neon-purple/30"
               />
               {activeGesture && (
                 <div className="absolute top-2 right-2 bg-neon-purple text-white px-2 py-1 rounded text-xs">
@@ -374,30 +377,15 @@ const Index = () => {
                 </div>
               )}
             </div>
-          </div>
-          
-          <div className="w-1/3">
-            <p className="text-sm text-gray-400 mb-1">Current Status:</p>
-            <div className="bg-gray-900 rounded-lg p-3 border border-neon-purple/30">
-              <div className="text-sm">
-                <p className="mb-1"><span className="text-neon-purple">Brightness:</span> {Math.round(currentBrightness)}%</p>
-                <p className="mb-1"><span className="text-neon-purple">Volume:</span> {Math.round(currentVolume * 100)}%</p>
-                <p><span className="text-neon-purple">Detected Gesture:</span> {activeGesture || "None"}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="w-1/3 flex justify-end">
+            
             {activeVideoId === "screenshot" ? (
-              <div className="bg-gray-900 rounded-lg p-3 border border-neon-purple/30 w-full max-w-xs">
-                <p className="text-sm text-gray-400 mb-1">Last Screenshot:</p>
-                <div className="aspect-video bg-black rounded relative flex items-center justify-center">
-                  {activeGesture === 'pinch' ? (
+              <div className="w-1/3 aspect-video bg-transparent rounded-lg">
+                <div className="h-full w-full flex items-center justify-center rounded-lg border border-neon-purple/30">
+                  <p className="text-gray-500 text-sm">Make pinch gesture to capture</p>
+                  {activeGesture === 'pinch' && (
                     <div className="absolute inset-0 animate-flash">
                       <div className="w-full h-full bg-white opacity-50"></div>
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-sm">Make pinch gesture to capture</p>
                   )}
                 </div>
               </div>
@@ -553,7 +541,7 @@ const Index = () => {
         </div>
       ))}
 
-      {/* Camera feed at bottom of screen */}
+      {/* Camera feed at the center bottom of screen */}
       {permissionGranted && <CameraFeed />}
 
       {/* Custom Gesture Tool Section */}
