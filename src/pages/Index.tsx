@@ -130,7 +130,7 @@ const Index = () => {
     // Update status for the relevant gesture section
     let statusUpdate = "";
 
-    // Check if we're in a specific feature mode and only process relevant gestures
+    // Only process gestures for the active feature
     if (activeFeature === "brightness") {
       if (["slideUp", "slideDown", "thumbRight", "thumbLeft"].includes(gesture)) {
         handleBrightnessGesture(gesture);
@@ -142,34 +142,6 @@ const Index = () => {
     } else if (activeFeature === "screenshot") {
       if (["pinch"].includes(gesture)) {
         handleScreenshotGesture();
-      }
-    } else {
-      // If no specific feature is active, process all gestures
-      switch (gesture) {
-        case 'slideUp':
-        case 'thumbRight': 
-          handleBrightnessGesture(gesture);
-          break;
-        case 'slideDown':
-        case 'thumbLeft': 
-          handleBrightnessGesture(gesture);
-          break;
-        case 'slideRight':
-        case 'slideLeft':
-          handleVolumeGesture(gesture);
-          break;
-        case 'clap':
-          handleChromeLaunchGesture();
-          break;
-        case 'peace':
-          handleWindowCloseGesture();
-          break;
-        case 'pinch':
-          handleScreenshotGesture();
-          break;
-        case 'none':
-          // No gesture detected
-          break;
       }
     }
 
@@ -191,10 +163,6 @@ const Index = () => {
           ...prev,
           brightness: statusUpdateUp
         }));
-        toast({
-          title: "Brightness Increased",
-          description: `Brightness set to ${Math.round(newBrightnessUp)}%`
-        });
         break;
       case 'slideDown':
       case 'thumbLeft': 
@@ -206,10 +174,6 @@ const Index = () => {
           ...prev,
           brightness: statusUpdateDown
         }));
-        toast({
-          title: "Brightness Decreased",
-          description: `Brightness set to ${Math.round(newBrightnessDown)}%`
-        });
         break;
     }
   };
@@ -225,10 +189,6 @@ const Index = () => {
           ...prev,
           volume: statusUpdateUp
         }));
-        toast({
-          title: "Volume Increased",
-          description: `Volume set to ${Math.round(newVolumeUp * 100)}%`
-        });
         break;
       case 'slideLeft':
         const newVolumeDown = Math.max(currentVolume - 0.1, 0.0);
@@ -239,10 +199,6 @@ const Index = () => {
           ...prev,
           volume: statusUpdateDown
         }));
-        toast({
-          title: "Volume Decreased",
-          description: `Volume set to ${Math.round(newVolumeDown * 100)}%`
-        });
         break;
     }
   };
@@ -254,10 +210,6 @@ const Index = () => {
       ...prev,
       screenshot: statusUpdate
     }));
-    toast({
-      title: "Screenshot Gesture",
-      description: "Screenshot gesture detected"
-    });
   };
 
   const handleChromeLaunchGesture = () => {
@@ -267,10 +219,6 @@ const Index = () => {
       ...prev,
       openChrome: statusUpdate
     }));
-    toast({
-      title: "Opening Chrome",
-      description: "Launching Chrome browser"
-    });
   };
 
   const handleWindowCloseGesture = () => {
@@ -280,60 +228,44 @@ const Index = () => {
       ...prev,
       closeWindow: statusUpdate
     }));
-    toast({
-      title: "Window Close Gesture",
-      description: "Close window gesture detected"
-    });
   };
   
   const requestCameraPermission = async (sectionId: string) => {
+    // Deactivate any currently active feature first
+    if (activeFeature) {
+      setActiveFeature(null);
+      setTrackBrightnessWithCursor(false);
+      
+      // If camera is active, stop it
+      if (permissionGranted) {
+        gestureDetection.stop();
+        setPermissionGranted(false);
+      }
+    }
+    
     // For audio section, don't request camera permission, just activate the feature
     if (sectionId === "volume") {
       setActiveFeature(sectionId);
-      
-      // Play the demo audio
-      const audio = new Audio("/demo-audio.mp3");
-      audio.volume = 0.5; // Set initial volume to 50%
-      audio.loop = true; // Loop the audio
-      audio.play().catch(e => console.error("Audio play error:", e));
-      
-      toast({
-        title: "Audio demo activated",
-        description: "You can now see the audio control animation."
-      });
-      
+      // Play the demo audio handled in AudioAnimation component
       return;
     }
     
-    // For other features, request camera permission as before
+    // For other features, request camera permission
     try {
       await gestureDetection.requestPermission();
       setPermissionGranted(true);
       setActiveVideoId(sectionId);
       setActiveFeature(sectionId); // Set active feature to restrict gestures
 
-      toast({
-        title: "Camera access granted",
-        description: "You can now try the gesture controls."
-      });
-
       // Start gesture detection with callback
       gestureDetection.start({
         onGestureDetected: handleGestureDetected,
         onError: error => {
-          toast({
-            variant: "destructive",
-            title: "Gesture Detection Error",
-            description: error.message
-          });
+          console.error("Gesture Detection Error:", error.message);
         }
       });
     } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Camera access denied",
-        description: "Please allow camera access to use gesture controls."
-      });
+      console.error("Camera access denied:", err);
     }
   };
   
@@ -432,7 +364,7 @@ const Index = () => {
     recommended: false
   }];
   
-  // Camera display component - redesigned to be at the center bottom
+  // Camera display component - redesigned to be at the center bottom with flipped video
   const CameraFeed = () => {
     if (!permissionGranted) return null;
     
@@ -446,7 +378,7 @@ const Index = () => {
                 autoPlay 
                 playsInline 
                 muted 
-                className="w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-cover rounded-lg transform scale-x-[-1]"
               />
               {activeGesture && (
                 <div className="absolute top-2 right-2 bg-neon-purple text-white px-2 py-1 rounded text-xs">

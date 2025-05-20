@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Volume2 } from 'lucide-react';
+import { Volume2, Pause, Play } from 'lucide-react';
 import { ThumbsLeft } from './icons/ThumbsLeft';
 import { ThumbsRight } from './icons/ThumbsRight';
 
@@ -14,6 +14,7 @@ interface AudioAnimationProps {
 
 const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnimationProps) => {
   const [showAnimation, setShowAnimation] = useState<'left' | 'right' | null>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Auto animation effect when component becomes active
@@ -40,10 +41,14 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
         audioRef.current.loop = true;
       }
       
-      // Set the volume and play
+      // Set the volume and play or pause based on isPlaying state
       if (audioRef.current) {
         audioRef.current.volume = currentVolume;
-        audioRef.current.play().catch(err => console.error("Audio playback error:", err));
+        if (isPlaying) {
+          audioRef.current.play().catch(err => console.error("Audio playback error:", err));
+        } else {
+          audioRef.current.pause();
+        }
       }
     } else {
       // Stop audio when component is not active
@@ -60,7 +65,12 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
         audioRef.current.currentTime = 0;
       }
     };
-  }, [isActive, currentVolume]);
+  }, [isActive, currentVolume, isPlaying]);
+
+  // Toggle play/pause function
+  const togglePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
 
   // Animation variants for the thumbs up animation
   const thumbsUpVariants = {
@@ -94,19 +104,8 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
     <div className="relative h-full w-full flex flex-col items-center justify-center">
       {/* Centered content with flex */}
       <div className="flex flex-col items-center justify-center h-full">
-        {/* Centered volume icon */}
-        <div className="mb-4">
-          <Volume2 
-            className={`w-16 h-16 ${isActive ? 'text-neon-purple animate-pulse' : 'text-gray-400'}`} 
-          />
-        </div>
-        
-        <div className="text-lg font-medium mb-4">
-          Volume: {Math.round(currentVolume * 100)}%
-        </div>
-        
         {/* Container for thumbs up/down icons */}
-        <div className="relative h-32 w-full flex items-center justify-center">
+        <div className="relative h-32 w-full flex items-center justify-center mb-8">
           {/* Left side - Thumbs down animation */}
           <motion.div
             className="absolute left-12"
@@ -128,6 +127,29 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
           >
             <ThumbsRight className="w-12 h-12 text-neon-purple" />
           </motion.div>
+        </div>
+
+        {/* Moved volume icon and added play/pause button */}
+        <div className="flex items-center justify-center space-x-4 mb-4">
+          <Volume2 
+            className={`w-16 h-16 ${isActive ? 'text-neon-purple' : 'text-gray-400'}`} 
+          />
+          
+          {isActive && (
+            <button 
+              onClick={togglePlayPause} 
+              className="rounded-full bg-neon-purple p-3 hover:bg-opacity-80 transition-all"
+            >
+              {isPlaying ? 
+                <Pause className="w-8 h-8 text-white" /> : 
+                <Play className="w-8 h-8 text-white" />
+              }
+            </button>
+          )}
+        </div>
+        
+        <div className="text-lg font-medium">
+          Volume: {Math.round(currentVolume * 100)}%
         </div>
       </div>
       
