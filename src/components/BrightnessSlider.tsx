@@ -16,7 +16,7 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
   
   // Ensure value doesn't go below 10%
   const effectiveMin = Math.max(min, 10);
-  const normalizedValue = ((Math.max(value, effectiveMin) - effectiveMin) / (max - effectiveMin)) * 100;
+  const normalizedValue = Math.max(0, Math.min(100, ((Math.max(value, effectiveMin) - effectiveMin) / (max - effectiveMin)) * 100));
   
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
@@ -105,24 +105,24 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
           </div>
         </div>
 
-        {/* Circular slider thumb instead of hand icon */}
+        {/* Circular slider thumb - smaller and centered */}
         <motion.div 
           className={`absolute top-1/2 -translate-y-1/2 z-10 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           animate={{ 
-            x: `${normalizedValue}%`, 
+            x: `calc(${normalizedValue}% - 20px)`, // Center the thumb (half of its width)
             scale: isDragging || isActive ? 1.1 : 1
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
           <div 
-            className={`w-12 h-12 flex items-center justify-center rounded-full 
+            className={`w-10 h-10 flex items-center justify-center rounded-full 
               bg-gradient-to-r from-neon-purple to-neon-pink 
               ${isActive ? 'animate-pulse shadow-lg shadow-neon-purple/50' : ''}
               transition-all duration-300`}
           >
-            {/* Circular thumb that changes color based on brightness */}
+            {/* Circular thumb that changes color based on brightness - smaller */}
             <div 
-              className="w-8 h-8 rounded-full transition-colors duration-300"
+              className="w-6 h-6 rounded-full transition-colors duration-300"
               style={{ backgroundColor: getBrightnessColor() }}
             ></div>
           </div>
