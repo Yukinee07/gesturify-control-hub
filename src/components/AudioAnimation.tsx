@@ -16,15 +16,24 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
   // Animation variants for the thumbs
   const thumbVariants = {
     hidden: { opacity: 0, y: 0 },
-    visible: (direction: 'up' | 'down') => ({
+    visible: {
       opacity: [0, 1, 0],
-      y: direction === 'up' ? [-20, -40, -60] : [20, 40, 60],
+      y: [-20, -40, -60],
       transition: { 
         duration: 2,
         repeat: Infinity,
-        repeatType: "loop"
+        repeatType: "loop" as const
       }
-    })
+    },
+    visibleDown: {
+      opacity: [0, 1, 0],
+      y: [20, 40, 60],
+      transition: { 
+        duration: 2,
+        repeat: Infinity,
+        repeatType: "loop" as const
+      }
+    }
   };
 
   return (
@@ -46,7 +55,6 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
           variants={thumbVariants}
           initial="hidden"
           animate={isActive && (gesture === 'slideRight' || gesture === 'thumbRight') ? "visible" : "hidden"}
-          custom="up"
         >
           <ThumbsRight className="w-12 h-12 text-neon-purple rotate-0" />
         </motion.div>
@@ -56,8 +64,7 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
           className="absolute"
           variants={thumbVariants}
           initial="hidden"
-          animate={isActive && (gesture === 'slideLeft' || gesture === 'thumbLeft') ? "visible" : "hidden"}
-          custom="down"
+          animate={isActive && (gesture === 'slideLeft' || gesture === 'thumbLeft') ? "visibleDown" : "hidden"}
         >
           <ThumbsLeft className="w-12 h-12 text-neon-purple rotate-0" />
         </motion.div>
