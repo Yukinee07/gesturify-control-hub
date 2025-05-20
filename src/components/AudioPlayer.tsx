@@ -14,6 +14,7 @@ export const AudioPlayer = ({ isActive }: AudioPlayerProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const animationRef = useRef<number>();
   
+  // Play audio automatically when component becomes active
   useEffect(() => {
     if (isActive && !isPlaying) {
       setIsPlaying(true);

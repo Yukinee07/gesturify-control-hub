@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ThumbsUp, ThumbsDown, Volume2 } from 'lucide-react';
+import { Volume2 } from 'lucide-react';
 import { ThumbsLeft } from './icons/ThumbsLeft';
 import { ThumbsRight } from './icons/ThumbsRight';
 
@@ -38,7 +38,8 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
 
   return (
     <div className="relative h-full w-full flex flex-col items-center justify-center">
-      <div className="mb-8">
+      {/* Center volume icon */}
+      <div className="mb-4">
         <Volume2 
           className={`w-16 h-16 ${isActive ? 'text-neon-purple animate-pulse' : 'text-gray-400'}`} 
         />
@@ -48,25 +49,26 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
         Volume: {Math.round(currentVolume * 100)}%
       </div>
       
+      {/* Container for thumbs up/down icons */}
       <div className="relative h-32 w-full flex items-center justify-center">
-        {/* Up thumb animation */}
+        {/* Left side - Thumbs down animation */}
         <motion.div
-          className="absolute"
-          variants={thumbVariants}
-          initial="hidden"
-          animate={isActive && (gesture === 'slideRight' || gesture === 'thumbRight') ? "visible" : "hidden"}
-        >
-          <ThumbsRight className="w-12 h-12 text-neon-purple rotate-0" />
-        </motion.div>
-        
-        {/* Down thumb animation */}
-        <motion.div
-          className="absolute"
+          className="absolute left-12"
           variants={thumbVariants}
           initial="hidden"
           animate={isActive && (gesture === 'slideLeft' || gesture === 'thumbLeft') ? "visibleDown" : "hidden"}
         >
-          <ThumbsLeft className="w-12 h-12 text-neon-purple rotate-0" />
+          <ThumbsLeft className="w-12 h-12 text-neon-purple" />
+        </motion.div>
+        
+        {/* Right side - Thumbs up animation */}
+        <motion.div
+          className="absolute right-12"
+          variants={thumbVariants}
+          initial="hidden"
+          animate={isActive && (gesture === 'slideRight' || gesture === 'thumbRight') ? "visible" : "hidden"}
+        >
+          <ThumbsRight className="w-12 h-12 text-neon-purple" />
         </motion.div>
       </div>
       

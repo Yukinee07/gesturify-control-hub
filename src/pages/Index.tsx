@@ -293,6 +293,13 @@ const Index = () => {
       setActiveVideoId(sectionId);
       setActiveFeature(sectionId); // Set active feature to restrict gestures
 
+      // Play an audio clip when the volume feature is activated
+      if (sectionId === "volume") {
+        const audio = new Audio("/demo-audio.mp3");
+        audio.volume = 0.5; // Set initial volume to 50%
+        audio.play().catch(e => console.error("Audio play error:", e));
+      }
+
       toast({
         title: "Camera access granted",
         description: "You can now try the gesture controls."
@@ -452,7 +459,8 @@ const Index = () => {
             <Button 
               onClick={() => {
                 setPermissionGranted(false);
-                setActiveFeature(null);
+                setActiveFeature(null); // Reset active feature
+                setTrackBrightnessWithCursor(false); // Stop tracking brightness with cursor
                 gestureDetection.stop();
               }} 
               className="bg-gradient-to-r from-neon-purple to-neon-pink"
