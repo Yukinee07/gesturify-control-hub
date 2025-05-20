@@ -16,9 +16,6 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
   const [isDragging, setIsDragging] = useState(false);
   const normalizedValue = ((value - min) / (max - min)) * 100;
   
-  // Calculate vertical position based on value
-  const thumbPosition = 100 - normalizedValue; // Invert for vertical slider (bottom = max)
-  
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
     handlePointerMove(e);
@@ -33,10 +30,10 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
   const handlePointerMove = (e: React.PointerEvent) => {
     if (isDragging && sliderRef.current) {
       const rect = sliderRef.current.getBoundingClientRect();
-      const y = e.clientY - rect.top;
+      const x = e.clientX - rect.left;
       
-      // Convert y position to percentage (inverted because y increases downward)
-      const percentage = 100 - Math.max(0, Math.min(100, (y / rect.height) * 100));
+      // Convert x position to percentage
+      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
       
       // Convert percentage to value
       const newValue = min + (percentage / 100) * (max - min);
@@ -48,7 +45,7 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
     <div className="flex flex-col items-center justify-center h-full relative">
       <div 
         ref={sliderRef}
-        className="relative h-64 w-8 bg-gray-800/50 rounded-full mx-auto cursor-pointer"
+        className="relative h-8 w-64 bg-gray-800/50 rounded-full mx-auto cursor-pointer"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -58,25 +55,52 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
         <div className="absolute inset-0 overflow-hidden rounded-full">
           {/* Glowing tube effect */}
           <div 
-            className="absolute left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-r from-neon-purple to-neon-pink blur-lg"
+            className="absolute top-1/2 -translate-y-1/2 h-20 w-20 rounded-full bg-gradient-to-r from-neon-purple to-neon-pink blur-lg"
             style={{ 
-              bottom: `${normalizedValue}%`, 
+              left: `${normalizedValue}%`, 
               opacity: 0.5 + (normalizedValue / 200)
             }}
           ></div>
 
-          {/* Filled portion */}
+          {/* The tube light itself */}
+          <div className="absolute inset-0 flex items-center px-2">
+            <div className="h-2 w-full bg-gray-800/80 rounded-full overflow-hidden">
+              {/* The glowing portion */}
+              <div 
+                className="h-full bg-gradient-to-r from-neon-purple to-neon-pink rounded-full"
+                style={{ width: `${normalizedValue}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Radiating glow effect */}
           <div 
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-neon-purple to-neon-pink rounded-full"
-            style={{ height: `${normalizedValue}%` }}
-          ></div>
+            className="absolute top-1/2 -translate-y-1/2 transition-all duration-300"
+            style={{ 
+              left: `${normalizedValue}%`, 
+              opacity: isActive || isDragging ? 0.7 : 0.3
+            }}
+          >
+            {[...Array(3)].map((_, i) => (
+              <div 
+                key={i} 
+                className="absolute -translate-x-1/2 -translate-y-1/2 bg-gradient-radial from-neon-pink/30 to-transparent rounded-full"
+                style={{
+                  width: `${30 + i * 20}px`,
+                  height: `${30 + i * 20}px`,
+                  opacity: 1 - (i * 0.2),
+                  animation: `pulse ${1 + i * 0.5}s infinite alternate ease-in-out`
+                }}
+              ></div>
+            ))}
+          </div>
         </div>
 
         {/* Thumb */}
         <motion.div 
-          className={`absolute left-1/2 -translate-x-1/2 z-10 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`absolute top-1/2 -translate-y-1/2 z-10 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           animate={{ 
-            y: `${thumbPosition}%`, 
+            x: `${normalizedValue}%`, 
             scale: isDragging || isActive ? 1.1 : 1
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}

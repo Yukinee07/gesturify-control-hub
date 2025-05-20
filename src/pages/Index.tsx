@@ -24,7 +24,7 @@ const Index = () => {
   const [gestureStatus, setGestureStatus] = useState<{
     [key: string]: string;
   }>({});
-  const [currentBrightness, setCurrentBrightness] = useState(1);
+  const [currentBrightness, setCurrentBrightness] = useState(100);
   const [currentVolume, setCurrentVolume] = useState(0.5);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [trackBrightnessWithCursor, setTrackBrightnessWithCursor] = useState(false);
@@ -135,33 +135,33 @@ const Index = () => {
     // Apply the corresponding action based on the detected gesture
     switch (gesture) {
       case 'slideUp':
-      case 'thumbRight': // Add handling for new thumb right gesture
-        const newBrightnessUp = Math.min(currentBrightness + 0.1, 1.5);
+      case 'thumbRight': 
+        const newBrightnessUp = Math.min(currentBrightness + 10, 150);
         setCurrentBrightness(newBrightnessUp);
-        gestureDetection.adjustBrightness('up');
-        statusUpdate = `Increasing brightness to ${Math.round(newBrightnessUp * 100)}%`;
+        // Remove direct brightness adjustment for the whole page
+        statusUpdate = `Increasing brightness to ${Math.round(newBrightnessUp)}%`;
         setGestureStatus(prev => ({
           ...prev,
           brightness: statusUpdate
         }));
         toast({
           title: "Brightness Increased",
-          description: `Brightness set to ${Math.round(newBrightnessUp * 100)}%`
+          description: `Brightness set to ${Math.round(newBrightnessUp)}%`
         });
         break;
       case 'slideDown':
-      case 'thumbLeft': // Add handling for new thumb left gesture
-        const newBrightnessDown = Math.max(currentBrightness - 0.1, 0.5);
+      case 'thumbLeft': 
+        const newBrightnessDown = Math.max(currentBrightness - 10, 50);
         setCurrentBrightness(newBrightnessDown);
-        gestureDetection.adjustBrightness('down');
-        statusUpdate = `Decreasing brightness to ${Math.round(newBrightnessDown * 100)}%`;
+        // Remove direct brightness adjustment for the whole page
+        statusUpdate = `Decreasing brightness to ${Math.round(newBrightnessDown)}%`;
         setGestureStatus(prev => ({
           ...prev,
           brightness: statusUpdate
         }));
         toast({
           title: "Brightness Decreased",
-          description: `Brightness set to ${Math.round(newBrightnessDown * 100)}%`
+          description: `Brightness set to ${Math.round(newBrightnessDown)}%`
         });
         break;
       case 'slideRight':
@@ -276,8 +276,8 @@ const Index = () => {
   const gestureSections = [{
     id: "brightness",
     title: "Change Brightness",
-    description: "Control Screen Brightness with Hand Gestures. Move your hand up and down to adjust brightness levels.",
-    icon: <ArrowUp className="w-12 h-12 text-neon-purple" />,
+    description: "Control Screen Brightness with Hand Gestures. Move your hand left and right to adjust brightness levels.",
+    icon: <ArrowRight className="w-12 h-12 text-neon-purple" />,
     gestureDemo: () => {
       if (!trackBrightnessWithCursor) {
         setTrackBrightnessWithCursor(true);
@@ -288,7 +288,7 @@ const Index = () => {
     gestureType: ['slideUp', 'slideDown', 'thumbLeft', 'thumbRight'],
     status: gestureStatus.brightness || "Waiting for gesture...",
     value: currentBrightness,
-    instructions: "Move hand up/down to adjust brightness"
+    instructions: "Move hand left/right to adjust brightness"
   }, {
     id: "volume",
     title: "Change Audio",
@@ -419,24 +419,27 @@ const Index = () => {
               </div>
               <div className="w-full md:w-1/2 flex justify-center">
                 {section.id === "brightness" ? (
-                  <div ref={brightnessContainerRef} className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
+                  <div ref={brightnessContainerRef} className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor ? 'ring-4 ring-neon-purple scale-105' : ''}`}
+                    style={{
+                      filter: `brightness(${currentBrightness / 100})`,
+                      transition: 'filter 0.3s ease'
+                    }}
+                  >
                     <div className="absolute inset-0 bg-gradient-to-b from-neon-purple/5 via-black/20 to-black/40 transition-opacity duration-500" style={{
-                      opacity: currentBrightness,
-                      background: `linear-gradient(to bottom, rgba(139, 92, 246, ${0.1 * currentBrightness}), rgba(0, 0, 0, ${0.4 - 0.2 * currentBrightness}))`
+                      opacity: currentBrightness / 100,
+                      background: `linear-gradient(to bottom, rgba(139, 92, 246, ${0.1 * currentBrightness / 100}), rgba(0, 0, 0, ${0.4 - 0.2 * currentBrightness / 100}))`
                     }}></div>
                     
                     <div className="relative z-10 flex items-center justify-center h-full w-full">
                       <BrightnessSlider 
-                        value={currentBrightness * 100} 
+                        value={currentBrightness} 
                         min={50} 
                         max={150} 
                         onChange={(newValue) => {
-                          const brightness = newValue / 100;
-                          setCurrentBrightness(brightness);
-                          gestureDetection.adjustBrightness(brightness > currentBrightness ? 'up' : 'down');
+                          setCurrentBrightness(newValue);
                           
-                          // Update status and thumb color
-                          const statusUpdate = `${brightness > currentBrightness ? 'Increasing' : 'Decreasing'} brightness to ${Math.round(newValue)}%`;
+                          // Update status
+                          const statusUpdate = `${newValue > currentBrightness ? 'Increasing' : 'Decreasing'} brightness to ${Math.round(newValue)}%`;
                           setGestureStatus(prev => ({
                             ...prev,
                             brightness: statusUpdate
@@ -601,19 +604,21 @@ const Index = () => {
 
       {/* Add global styles for the brightness filter */}
       <style>{`
-        :root {
-          --brightness: ${currentBrightness};
-        }
-
-        /* Custom styles for the vertical brightness slider */
+        /* Custom styles for the horizontal brightness slider */
         .brightness-slider .radix-slider-thumb {
           box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
           transition: all 0.3s ease;
-          background-color: ${thumbColor};
         }
         .brightness-slider .radix-slider-thumb:hover {
           transform: scale(1.2);
           box-shadow: 0 0 25px rgba(255, 255, 255, 0.9), 0 0 5px rgba(139, 92, 246, 0.8);
+        }
+
+        /* Add animation for the glowing tube effect */
+        @keyframes tubeGlow {
+          0% { filter: brightness(1); }
+          50% { filter: brightness(1.3); }
+          100% { filter: brightness(1); }
         }
       `}</style>
     </div>;

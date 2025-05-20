@@ -26,23 +26,35 @@ export const AudioPlayer = ({ isActive }: AudioPlayerProps) => {
     };
   }, [isActive]);
   
-  // Volume animation effect
+  // Volume animation effect - more gradual change
   useEffect(() => {
     if (!isPlaying) return;
     
+    let lastUpdateTime = Date.now();
+    const volumeChangeRate = 2; // Units per second (more gradual)
+    
     const animateVolume = () => {
+      const now = Date.now();
+      const deltaTime = now - lastUpdateTime;
+      lastUpdateTime = now;
+      
+      // Calculate volume change based on time elapsed
+      const volumeChange = (volumeChangeRate * deltaTime) / 1000;
+      
       setVolume(prevVolume => {
         let newVolume = prevVolume;
         
         if (direction === 'up') {
-          newVolume += 1;
+          newVolume += volumeChange;
           if (newVolume >= 100) {
             setDirection('down');
+            newVolume = 100;
           }
         } else {
-          newVolume -= 1;
+          newVolume -= volumeChange;
           if (newVolume <= 0) {
             setDirection('up');
+            newVolume = 0;
           }
         }
         
@@ -81,18 +93,7 @@ export const AudioPlayer = ({ isActive }: AudioPlayerProps) => {
   };
   
   const handleVolumeChange = (newDirection: 'up' | 'down') => {
-    const volumeStep = 10;
-    setVolume(prev => {
-      const newVolume = newDirection === 'up' 
-        ? Math.min(100, prev + volumeStep)
-        : Math.max(0, prev - volumeStep);
-        
-      if (audioRef.current) {
-        audioRef.current.volume = newVolume / 100;
-      }
-      
-      return newVolume;
-    });
+    setDirection(newDirection);
   };
   
   return (
@@ -182,12 +183,12 @@ export const AudioPlayer = ({ isActive }: AudioPlayerProps) => {
             style={{ width: `${volume}%` }}
           />
         </div>
-        <span className="text-sm font-medium">{volume}%</span>
+        <span className="text-sm font-medium">{Math.round(volume)}%</span>
       </div>
       
       {isActive && (
         <div className="absolute bottom-3 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
-          Use left/right gestures to control volume
+          Volume {direction === 'up' ? 'increasing' : 'decreasing'} automatically
         </div>
       )}
     </div>
