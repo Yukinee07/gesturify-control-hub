@@ -10,6 +10,8 @@ import Logo from "@/components/Logo";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Volume2, VolumeX, Chrome, MessageSquare, Camera, HandMetal, PanelLeft, Settings, CheckCircle, ThumbsUp, ThumbsDown } from "lucide-react";
 import { ThumbsLeft } from "@/components/icons/ThumbsLeft";
 import { ThumbsRight } from "@/components/icons/ThumbsRight";
+import CurvedSlider from "@/components/CurvedSlider";
+import AudioPlayer from "@/components/AudioPlayer";
 
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
@@ -274,7 +276,7 @@ const Index = () => {
   const gestureSections = [{
     id: "brightness",
     title: "Change Brightness",
-    description: "Control Screen Brightness with Thumb Gestures. Point thumb right to increase, left to decrease.",
+    description: "Control Screen Brightness with Hand Gestures. Move your hand along the curve to adjust brightness levels.",
     icon: <ArrowUp className="w-12 h-12 text-neon-purple" />,
     gestureDemo: () => {
       if (!trackBrightnessWithCursor) {
@@ -286,11 +288,11 @@ const Index = () => {
     gestureType: ['slideUp', 'slideDown', 'thumbLeft', 'thumbRight'],
     status: gestureStatus.brightness || "Waiting for gesture...",
     value: currentBrightness,
-    instructions: "Point thumb right to increase brightness, left to decrease"
+    instructions: "Move hand along curve to adjust brightness"
   }, {
     id: "volume",
     title: "Change Audio",
-    description: "Increase or decrease volume with thumbs up or down.",
+    description: "Control your audio experience with simple hand gestures. Swipe left or right to adjust volume.",
     icon: <Volume2 className="w-12 h-12 text-neon-purple" />,
     gestureDemo: () => gestureDetection.simulateGestureDetection('slideRight'),
     gestureType: ['slideLeft', 'slideRight'],
@@ -392,7 +394,7 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Gesture Control Sections with consistent spacing and glow effect */}
+      {/* Gesture Control Sections with updated interactive components */}
       {gestureSections.map((section, index) => <div key={section.id} id={section.id} className="min-h-screen flex items-center justify-center relative scroll-mt-16 md:px-8 px-[80px] py-[61px] my-0">
           <div className="container mx-auto rounded-xl py-5 feature-box-container hover:feature-box-glow">
             <div className={`flex flex-col md:flex-row items-center ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} gap-16 p-8`}>
@@ -416,75 +418,68 @@ const Index = () => {
                 </Button>
               </div>
               <div className="w-full md:w-1/2 flex justify-center">
-                {section.id === "brightness" ? <div ref={brightnessContainerRef} className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
+                {section.id === "brightness" ? (
+                  <div ref={brightnessContainerRef} className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
                     <div className="absolute inset-0 bg-gradient-to-b from-neon-purple/5 via-black/20 to-black/40 transition-opacity duration-500" style={{
                 opacity: currentBrightness,
                 background: `linear-gradient(to bottom, rgba(139, 92, 246, ${0.1 * currentBrightness}), rgba(0, 0, 0, ${0.4 - 0.2 * currentBrightness}))`
               }}></div>
                     
                     <div className="relative z-10 flex items-center justify-center h-full w-full">
-                      <div className="flex items-center justify-center h-4/5">
-                        <div className="mr-6 text-center">
-                          <p className="text-lg font-semibold mb-2">Brightness</p>
-                          <p className="text-3xl font-bold">{Math.round(currentBrightness * 100)}%</p>
-                        </div>
-                        
-                        <div className="h-64 flex items-center relative">
-                          {permissionGranted && activeVideoId === section.id ? <div className="absolute -left-32 bottom-0 w-24 h-24 zoom-in opacity-60">
-                              
-                            </div> : null}
+                      <CurvedSlider 
+                        value={currentBrightness * 100} 
+                        min={50} 
+                        max={150} 
+                        onChange={(newValue) => {
+                          const brightness = newValue / 100;
+                          setCurrentBrightness(brightness);
+                          gestureDetection.adjustBrightness(brightness > currentBrightness ? 'up' : 'down');
                           
-                          <Slider orientation="vertical" value={[currentBrightness * 100]} max={150} min={50} step={1} thumbColor={thumbColor} onValueChange={value => {
-                      const brightness = value[0] / 100;
-                      setCurrentBrightness(brightness);
-                      gestureDetection.adjustBrightness(brightness > currentBrightness ? 'up' : 'down');
-                    }} className="h-full brightness-slider" />
-                          
-                          <div className="ml-3 flex flex-col justify-between h-full text-xs opacity-70">
-                            <div>150%</div>
-                            <div>100%</div>
-                            <div>50%</div>
-                          </div>
-                        </div>
-                      </div>
+                          // Update status and thumb color
+                          const statusUpdate = `${brightness > currentBrightness ? 'Increasing' : 'Decreasing'} brightness to ${Math.round(newValue)}%`;
+                          setGestureStatus(prev => ({
+                            ...prev,
+                            brightness: statusUpdate
+                          }));
+                        }}
+                        isActive={section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor}
+                      />
                     </div>
                     
                     {(activeGesture && section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor) && <div className="absolute bottom-2 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
-                        {trackBrightnessWithCursor ? "Move cursor to adjust brightness" : section.status}
+                        {trackBrightnessWithCursor ? section.instructions : section.status}
                       </div>}
-                      
-                    {permissionGranted && activeVideoId === section.id && <div className="absolute top-4 left-0 right-0 text-center">
-                        <div className="flex justify-center items-center space-x-10 bg-black/50 py-2 px-4 mx-auto rounded-full inline-block">
-                          <div className="flex flex-col items-center">
-                            <ThumbsLeft className="w-8 h-8 text-white" />
-                            <span className="text-xs mt-1">Decrease</span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <ThumbsRight className="w-8 h-8 text-white" />
-                            <span className="text-xs mt-1">Increase</span>
-                          </div>
-                        </div>
-                      </div>}
-                  </div> : <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
+                  </div>
+                ) : section.id === "volume" ? (
+                  <AudioPlayer isActive={section.gestureType.includes(activeGesture as any)} />
+                ) : (
+                  <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
                     <div className="text-center p-8 w-full">
-                      <h3 className="text-xl font-semibold mb-4">Gesture Recognition Zone</h3>
-                      {permissionGranted && activeVideoId === section.id ? <div className="relative zoom-in">
-                        <video ref={videoRef} className="w-full h-48 object-cover rounded-lg mb-3" autoPlay playsInline muted />
-                        <div className="mb-3 text-white bg-black/50 p-2 rounded">
-                          <p className="font-mono text-sm">
-                            {section.status}
+                      <h3 className="text-xl font-semibold mb-4">Gesture Animation</h3>
+                      
+                      <div className="flex flex-col items-center">
+                        <div className="relative w-32 h-32 flex items-center justify-center">
+                          <Camera className={`w-16 h-16 text-neon-purple ${section.gestureType.includes(activeGesture as any) ? 'animate-ping' : ''}`} />
+                          {section.gestureType.includes(activeGesture as any) && (
+                            <div className="absolute inset-0 border-2 border-neon-purple rounded-lg animate-[ping_1s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+                          )}
+                        </div>
+                        
+                        <div className="mt-4">
+                          <p className={`text-lg font-medium ${section.gestureType.includes(activeGesture as any) ? 'text-neon-purple' : 'text-gray-400'}`}>
+                            {section.gestureType.includes(activeGesture as any) ? 'Screenshot Captured!' : 'Make a pinch gesture to capture'}
                           </p>
                         </div>
-                        {'value' in section && <div className="w-full bg-gray-700 h-2 rounded-full mt-2">
-                            <div className="bg-gradient-to-r from-neon-purple to-neon-pink h-full rounded-full" style={{
-                      width: `${Math.round(section.value * 100)}%`
-                    }}></div>
-                          </div>}
-                      </div> : <p className="text-gray-400">
-                        Click 'Try This Gesture' to enable camera and test this gesture.
-                      </p>}
+                      </div>
+                      
+                      {section.gestureType.includes(activeGesture as any) && (
+                        <div className="mt-4 bg-black/50 p-2 rounded text-sm">
+                          {section.status}
+                        </div>
+                      )}
                     </div>
-                  </div>}
+                  </div>
+                )}
               </div>
             </div>
           </div>
