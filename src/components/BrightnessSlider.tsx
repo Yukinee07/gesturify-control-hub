@@ -12,37 +12,11 @@ interface BrightnessSliderProps {
 
 export const BrightnessSlider = ({ value, max, min, onChange, isActive }: BrightnessSliderProps) => {
   const sliderRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
   
   // Ensure value doesn't go below 10%
   const effectiveMin = Math.max(min, 10);
   const normalizedValue = Math.max(0, Math.min(100, ((Math.max(value, effectiveMin) - effectiveMin) / (max - effectiveMin)) * 100));
   
-  const handlePointerDown = (e: React.PointerEvent) => {
-    setIsDragging(true);
-    handlePointerMove(e);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    setIsDragging(false);
-    e.currentTarget.releasePointerCapture(e.pointerId);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (isDragging && sliderRef.current) {
-      const rect = sliderRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      
-      // Convert x position to percentage
-      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      
-      // Convert percentage to value, but ensure it's at least 10%
-      const newValue = effectiveMin + (percentage / 100) * (max - effectiveMin);
-      onChange(Math.max(newValue, effectiveMin));
-    }
-  };
-
   // Calculate the brightness color - from dark to white
   const getBrightnessColor = () => {
     // Map normalized value (0-100) to RGB value (0-255)
@@ -54,10 +28,7 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
     <div className="flex flex-col items-center justify-center h-full">
       <div 
         ref={sliderRef}
-        className="relative h-8 w-64 bg-gray-800/50 rounded-full mx-auto cursor-pointer"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        className="relative h-8 w-64 bg-gray-800/50 rounded-full mx-auto"
         style={{ touchAction: 'none' }}
       >
         {/* Tube light effect container */}
@@ -87,7 +58,7 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
             className="absolute top-1/2 -translate-y-1/2 transition-all duration-300"
             style={{ 
               left: `${normalizedValue}%`, 
-              opacity: isActive || isDragging ? 0.7 : 0.3
+              opacity: isActive ? 0.7 : 0.3
             }}
           >
             {[...Array(3)].map((_, i) => (
@@ -105,12 +76,12 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
           </div>
         </div>
 
-        {/* Circular slider thumb - smaller and centered */}
+        {/* Circular slider thumb - centered and smaller */}
         <motion.div 
-          className={`absolute top-1/2 -translate-y-1/2 z-10 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className="absolute top-1/2 -translate-y-1/2 z-10"
           animate={{ 
-            x: `calc(${normalizedValue}% - 10px)`, // Centered smaller thumb
-            scale: isDragging || isActive ? 1.1 : 1
+            x: `calc(${normalizedValue}% - 10px)`,
+            scale: isActive ? 1.1 : 1
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
@@ -122,7 +93,7 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
           >
             {/* Circular thumb that changes color based on brightness - smaller */}
             <div 
-              className="w-4 h-4 rounded-full transition-colors duration-300"
+              className="w-3 h-3 rounded-full transition-colors duration-300"
               style={{ backgroundColor: getBrightnessColor() }}
             ></div>
           </div>

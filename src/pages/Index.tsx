@@ -12,6 +12,7 @@ import { ThumbsLeft } from "@/components/icons/ThumbsLeft";
 import { ThumbsRight } from "@/components/icons/ThumbsRight";
 import BrightnessSlider from "@/components/BrightnessSlider";
 import AudioPlayer from "@/components/AudioPlayer";
+import AudioAnimation from "@/components/AudioAnimation";
 
 const Index = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
@@ -29,6 +30,7 @@ const Index = () => {
   const [currentBrightness, setCurrentBrightness] = useState(100);
   const [currentVolume, setCurrentVolume] = useState(0.5);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [trackBrightnessWithCursor, setTrackBrightnessWithCursor] = useState(false);
   const [thumbColor, setThumbColor] = useState("#FFFFFF");
   const {
@@ -128,16 +130,66 @@ const Index = () => {
     // Update status for the relevant gesture section
     let statusUpdate = "";
 
-    // Apply the corresponding action based on the detected gesture
+    // Check if we're in a specific feature mode and only process relevant gestures
+    if (activeFeature === "brightness") {
+      if (["slideUp", "slideDown", "thumbRight", "thumbLeft"].includes(gesture)) {
+        handleBrightnessGesture(gesture);
+      }
+    } else if (activeFeature === "volume") {
+      if (["slideRight", "slideLeft"].includes(gesture)) {
+        handleVolumeGesture(gesture);
+      }
+    } else if (activeFeature === "screenshot") {
+      if (["pinch"].includes(gesture)) {
+        handleScreenshotGesture();
+      }
+    } else {
+      // If no specific feature is active, process all gestures
+      switch (gesture) {
+        case 'slideUp':
+        case 'thumbRight': 
+          handleBrightnessGesture(gesture);
+          break;
+        case 'slideDown':
+        case 'thumbLeft': 
+          handleBrightnessGesture(gesture);
+          break;
+        case 'slideRight':
+        case 'slideLeft':
+          handleVolumeGesture(gesture);
+          break;
+        case 'clap':
+          handleChromeLaunchGesture();
+          break;
+        case 'peace':
+          handleWindowCloseGesture();
+          break;
+        case 'pinch':
+          handleScreenshotGesture();
+          break;
+        case 'none':
+          // No gesture detected
+          break;
+      }
+    }
+
+    // Clear the active gesture state after a short delay
+    setTimeout(() => {
+      setActiveGesture(null);
+    }, 2000);
+  };
+  
+  // Gesture handler functions
+  const handleBrightnessGesture = (gesture: GestureType) => {
     switch (gesture) {
       case 'slideUp':
       case 'thumbRight': 
         const newBrightnessUp = Math.min(currentBrightness + 10, 100);
         setCurrentBrightness(newBrightnessUp);
-        statusUpdate = `Increasing brightness to ${Math.round(newBrightnessUp)}%`;
+        const statusUpdateUp = `Increasing brightness to ${Math.round(newBrightnessUp)}%`;
         setGestureStatus(prev => ({
           ...prev,
-          brightness: statusUpdate
+          brightness: statusUpdateUp
         }));
         toast({
           title: "Brightness Increased",
@@ -149,24 +201,29 @@ const Index = () => {
         // Ensure brightness doesn't go below 10%
         const newBrightnessDown = Math.max(currentBrightness - 10, 10);
         setCurrentBrightness(newBrightnessDown);
-        statusUpdate = `Decreasing brightness to ${Math.round(newBrightnessDown)}%`;
+        const statusUpdateDown = `Decreasing brightness to ${Math.round(newBrightnessDown)}%`;
         setGestureStatus(prev => ({
           ...prev,
-          brightness: statusUpdate
+          brightness: statusUpdateDown
         }));
         toast({
           title: "Brightness Decreased",
           description: `Brightness set to ${Math.round(newBrightnessDown)}%`
         });
         break;
+    }
+  };
+
+  const handleVolumeGesture = (gesture: GestureType) => {
+    switch (gesture) {
       case 'slideRight':
         const newVolumeUp = Math.min(currentVolume + 0.1, 1.0);
         setCurrentVolume(newVolumeUp);
         gestureDetection.adjustVolume('up');
-        statusUpdate = `Increasing volume to ${Math.round(newVolumeUp * 100)}%`;
+        const statusUpdateUp = `Increasing volume to ${Math.round(newVolumeUp * 100)}%`;
         setGestureStatus(prev => ({
           ...prev,
-          volume: statusUpdate
+          volume: statusUpdateUp
         }));
         toast({
           title: "Volume Increased",
@@ -177,61 +234,56 @@ const Index = () => {
         const newVolumeDown = Math.max(currentVolume - 0.1, 0.0);
         setCurrentVolume(newVolumeDown);
         gestureDetection.adjustVolume('down');
-        statusUpdate = `Decreasing volume to ${Math.round(newVolumeDown * 100)}%`;
+        const statusUpdateDown = `Decreasing volume to ${Math.round(newVolumeDown * 100)}%`;
         setGestureStatus(prev => ({
           ...prev,
-          volume: statusUpdate
+          volume: statusUpdateDown
         }));
         toast({
           title: "Volume Decreased",
           description: `Volume set to ${Math.round(newVolumeDown * 100)}%`
         });
         break;
-      case 'clap':
-        gestureDetection.openChrome();
-        statusUpdate = "Opening Chrome browser";
-        setGestureStatus(prev => ({
-          ...prev,
-          openChrome: statusUpdate
-        }));
-        toast({
-          title: "Opening Chrome",
-          description: "Launching Chrome browser"
-        });
-        break;
-      case 'peace':
-        gestureDetection.closeWindow();
-        statusUpdate = "Peace sign detected - would close window";
-        setGestureStatus(prev => ({
-          ...prev,
-          closeWindow: statusUpdate
-        }));
-        toast({
-          title: "Window Close Gesture",
-          description: "Close window gesture detected"
-        });
-        break;
-      case 'pinch':
-        gestureDetection.takeScreenshot();
-        statusUpdate = "Pinch detected - would take screenshot";
-        setGestureStatus(prev => ({
-          ...prev,
-          screenshot: statusUpdate
-        }));
-        toast({
-          title: "Screenshot Gesture",
-          description: "Screenshot gesture detected"
-        });
-        break;
-      case 'none':
-        // No gesture detected
-        break;
     }
+  };
 
-    // Clear the active gesture state after a short delay
-    setTimeout(() => {
-      setActiveGesture(null);
-    }, 2000);
+  const handleScreenshotGesture = () => {
+    gestureDetection.takeScreenshot();
+    const statusUpdate = "Pinch detected - would take screenshot";
+    setGestureStatus(prev => ({
+      ...prev,
+      screenshot: statusUpdate
+    }));
+    toast({
+      title: "Screenshot Gesture",
+      description: "Screenshot gesture detected"
+    });
+  };
+
+  const handleChromeLaunchGesture = () => {
+    gestureDetection.openChrome();
+    const statusUpdate = "Opening Chrome browser";
+    setGestureStatus(prev => ({
+      ...prev,
+      openChrome: statusUpdate
+    }));
+    toast({
+      title: "Opening Chrome",
+      description: "Launching Chrome browser"
+    });
+  };
+
+  const handleWindowCloseGesture = () => {
+    gestureDetection.closeWindow();
+    const statusUpdate = "Peace sign detected - would close window";
+    setGestureStatus(prev => ({
+      ...prev,
+      closeWindow: statusUpdate
+    }));
+    toast({
+      title: "Window Close Gesture",
+      description: "Close window gesture detected"
+    });
   };
   
   const requestCameraPermission = async (sectionId: string) => {
@@ -239,11 +291,8 @@ const Index = () => {
       await gestureDetection.requestPermission();
       setPermissionGranted(true);
       setActiveVideoId(sectionId);
+      setActiveFeature(sectionId); // Set active feature to restrict gestures
 
-      // Enable cursor tracking for brightness if this is the brightness section
-      if (sectionId === "brightness") {
-        setTrackBrightnessWithCursor(true);
-      }
       toast({
         title: "Camera access granted",
         description: "You can now try the gesture controls."
@@ -269,16 +318,15 @@ const Index = () => {
     }
   };
   
-  // Gesture sections with updated brightness section
+  // Gesture sections 
   const gestureSections = [{
     id: "brightness",
     title: "Change Brightness",
     description: "Control Screen Brightness with Hand Gestures. Move your hand left and right to adjust brightness levels.",
     icon: <ArrowRight className="w-12 h-12 text-neon-purple" />,
     gestureDemo: () => {
-      if (!trackBrightnessWithCursor) {
-        setTrackBrightnessWithCursor(true);
-      } else {
+      // Only simulate gesture if this feature is active
+      if (activeFeature === "brightness") {
         gestureDetection.simulateGestureDetection('thumbRight');
       }
     },
@@ -291,7 +339,12 @@ const Index = () => {
     title: "Change Audio",
     description: "Control your audio experience with simple hand gestures. Swipe left or right to adjust volume.",
     icon: <Volume2 className="w-12 h-12 text-neon-purple" />,
-    gestureDemo: () => gestureDetection.simulateGestureDetection('slideRight'),
+    gestureDemo: () => {
+      // Only simulate gesture if this feature is active
+      if (activeFeature === "volume") {
+        gestureDetection.simulateGestureDetection('slideRight');
+      }
+    },
     gestureType: ['slideLeft', 'slideRight'],
     status: gestureStatus.volume || "Waiting for gesture...",
     value: currentVolume
@@ -300,11 +353,16 @@ const Index = () => {
     title: "Take Screenshot",
     description: "Take a screenshot with a pinching gesture.",
     icon: <Camera className="w-12 h-12 text-neon-purple" />,
-    gestureDemo: () => gestureDetection.simulateGestureDetection('pinch'),
+    gestureDemo: () => {
+      // Only simulate gesture if this feature is active
+      if (activeFeature === "screenshot") {
+        gestureDetection.simulateGestureDetection('pinch');
+      }
+    },
     gestureType: ['pinch'],
     status: gestureStatus.screenshot || "Waiting for gesture..."
   }];
-  
+
   const handleCustomGestureTool = () => {
     if (!user) {
       navigate("/login");
@@ -361,15 +419,15 @@ const Index = () => {
     
     return (
       <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center">
-        <div className="w-full max-w-3xl p-4">
+        <div className="bg-transparent p-4 rounded-t-lg shadow-lg">
           <div className="flex items-center space-x-4">
-            <div className="w-1/3 aspect-video bg-transparent rounded-lg overflow-hidden">
+            <div className="w-64 aspect-video rounded-lg overflow-hidden border border-neon-purple/30">
               <video 
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
                 muted 
-                className="w-full h-full object-cover rounded-lg border border-neon-purple/30"
+                className="w-full h-full object-cover rounded-lg"
               />
               {activeGesture && (
                 <div className="absolute top-2 right-2 bg-neon-purple text-white px-2 py-1 rounded text-xs">
@@ -378,8 +436,8 @@ const Index = () => {
               )}
             </div>
             
-            {activeVideoId === "screenshot" ? (
-              <div className="w-1/3 aspect-video bg-transparent rounded-lg">
+            {activeVideoId === "screenshot" && (
+              <div className="w-64 aspect-video rounded-lg">
                 <div className="h-full w-full flex items-center justify-center rounded-lg border border-neon-purple/30">
                   <p className="text-gray-500 text-sm">Make pinch gesture to capture</p>
                   {activeGesture === 'pinch' && (
@@ -389,14 +447,18 @@ const Index = () => {
                   )}
                 </div>
               </div>
-            ) : (
-              <Button 
-                onClick={() => setTrackBrightnessWithCursor(false)} 
-                className="bg-gradient-to-r from-neon-purple to-neon-pink"
-              >
-                Stop Tracking
-              </Button>
             )}
+            
+            <Button 
+              onClick={() => {
+                setPermissionGranted(false);
+                setActiveFeature(null);
+                gestureDetection.stop();
+              }} 
+              className="bg-gradient-to-r from-neon-purple to-neon-pink"
+            >
+              Stop Camera
+            </Button>
           </div>
         </div>
       </div>
@@ -457,19 +519,16 @@ const Index = () => {
                     requestCameraPermission(section.id);
                   } else {
                     setActiveVideoId(section.id);
-                    if (section.id === "brightness") {
-                      setTrackBrightnessWithCursor(!trackBrightnessWithCursor);
-                    } else {
-                      section.gestureDemo();
-                    }
+                    setActiveFeature(section.id);
+                    section.gestureDemo();
                   }
-                }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${section.gestureType.includes(activeGesture as any) || section.id === "brightness" && trackBrightnessWithCursor ? 'ring-4 ring-neon-purple' : ''}`}>
-                  {section.id === "brightness" && trackBrightnessWithCursor ? "Stop Tracking" : "Try This Gesture"}
+                }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${activeFeature === section.id ? 'ring-4 ring-neon-purple' : ''}`}>
+                  {activeFeature === section.id ? "Active" : "Try This Gesture"}
                 </Button>
               </div>
               <div className="w-full md:w-1/2 flex justify-center">
                 {section.id === "brightness" ? (
-                  <div ref={brightnessContainerRef} className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor ? 'ring-4 ring-neon-purple scale-105' : ''}`}
+                  <div ref={brightnessContainerRef} className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 relative overflow-hidden ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}
                     style={{
                       filter: `brightness(${currentBrightness / 100})`,
                       transition: 'filter 0.3s ease'
@@ -486,26 +545,38 @@ const Index = () => {
                         min={10} 
                         max={100} 
                         onChange={(newValue) => {
-                          // Ensure brightness doesn't go below 10%
-                          const adjustedValue = Math.max(newValue, 10);
-                          setCurrentBrightness(adjustedValue);
-                          
-                          // Update status
-                          const statusUpdate = `${adjustedValue > currentBrightness ? 'Increasing' : 'Decreasing'} brightness to ${Math.round(adjustedValue)}%`;
-                          setGestureStatus(prev => ({
-                            ...prev,
-                            brightness: statusUpdate
-                          }));
+                          // Only update if this feature is active
+                          if (activeFeature === "brightness") {
+                            // Ensure brightness doesn't go below 10%
+                            const adjustedValue = Math.max(newValue, 10);
+                            setCurrentBrightness(adjustedValue);
+                            
+                            // Update status
+                            const statusUpdate = `${adjustedValue > currentBrightness ? 'Increasing' : 'Decreasing'} brightness to ${Math.round(adjustedValue)}%`;
+                            setGestureStatus(prev => ({
+                              ...prev,
+                              brightness: statusUpdate
+                            }));
+                          }
                         }}
-                        isActive={section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor}
+                        isActive={section.gestureType.includes(activeGesture as any)}
                       />
                     </div>
                     
-                    {(activeGesture && section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor) && (
+                    {(activeGesture && section.gestureType.includes(activeGesture as any)) && (
                       <div className="absolute bottom-2 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
-                        {trackBrightnessWithCursor ? section.instructions : section.status}
+                        {section.status}
                       </div>
                     )}
+                  </div>
+                ) : section.id === "volume" ? (
+                  <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
+                    <AudioAnimation 
+                      isActive={activeFeature === "volume"} 
+                      currentVolume={currentVolume}
+                      gesture={activeGesture}
+                      status={section.status}
+                    />
                   </div>
                 ) : (
                   <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
