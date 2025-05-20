@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Volume2 } from 'lucide-react';
 import { ThumbsLeft } from './icons/ThumbsLeft';
@@ -13,8 +13,25 @@ interface AudioAnimationProps {
 }
 
 const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnimationProps) => {
+  const [showAnimation, setShowAnimation] = useState<'left' | 'right' | null>(null);
+  
+  // Auto animation effect when component becomes active
+  useEffect(() => {
+    if (isActive) {
+      // Initial animation
+      setShowAnimation('right');
+      
+      // Create alternating animation sequence
+      const animationInterval = setInterval(() => {
+        setShowAnimation(prev => prev === 'right' ? 'left' : 'right');
+      }, 3000);
+      
+      return () => clearInterval(animationInterval);
+    }
+  }, [isActive]);
+
   // Animation variants for the thumbs
-  const thumbVariants = {
+  const thumbsUpVariants = {
     hidden: { opacity: 0, y: 0 },
     visible: {
       opacity: [0, 1, 0],
@@ -24,8 +41,12 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
         repeat: Infinity,
         repeatType: "loop" as const
       }
-    },
-    visibleDown: {
+    }
+  };
+
+  const thumbsDownVariants = {
+    hidden: { opacity: 0, y: 0 },
+    visible: {
       opacity: [0, 1, 0],
       y: [20, 40, 60],
       transition: { 
@@ -38,7 +59,7 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
 
   return (
     <div className="relative h-full w-full flex flex-col items-center justify-center">
-      {/* Center volume icon */}
+      {/* Centered volume icon */}
       <div className="mb-4">
         <Volume2 
           className={`w-16 h-16 ${isActive ? 'text-neon-purple animate-pulse' : 'text-gray-400'}`} 
@@ -54,9 +75,10 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
         {/* Left side - Thumbs down animation */}
         <motion.div
           className="absolute left-12"
-          variants={thumbVariants}
+          variants={thumbsDownVariants}
           initial="hidden"
-          animate={isActive && (gesture === 'slideLeft' || gesture === 'thumbLeft') ? "visibleDown" : "hidden"}
+          animate={(isActive && (gesture === 'slideLeft' || gesture === 'thumbLeft')) || 
+                  (isActive && showAnimation === 'left') ? "visible" : "hidden"}
         >
           <ThumbsLeft className="w-12 h-12 text-neon-purple" />
         </motion.div>
@@ -64,9 +86,10 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
         {/* Right side - Thumbs up animation */}
         <motion.div
           className="absolute right-12"
-          variants={thumbVariants}
+          variants={thumbsUpVariants}
           initial="hidden"
-          animate={isActive && (gesture === 'slideRight' || gesture === 'thumbRight') ? "visible" : "hidden"}
+          animate={(isActive && (gesture === 'slideRight' || gesture === 'thumbRight')) || 
+                  (isActive && showAnimation === 'right') ? "visible" : "hidden"}
         >
           <ThumbsRight className="w-12 h-12 text-neon-purple" />
         </motion.div>
@@ -74,7 +97,7 @@ const AudioAnimation = ({ isActive, currentVolume, gesture, status }: AudioAnima
       
       {isActive && (
         <div className="mt-4 bg-black/50 p-2 rounded text-sm">
-          {status}
+          {status || (showAnimation === 'right' ? 'Volume increasing...' : 'Volume decreasing...')}
         </div>
       )}
     </div>

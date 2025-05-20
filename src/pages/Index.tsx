@@ -287,18 +287,30 @@ const Index = () => {
   };
   
   const requestCameraPermission = async (sectionId: string) => {
+    // For audio section, don't request camera permission, just activate the feature
+    if (sectionId === "volume") {
+      setActiveFeature(sectionId);
+      
+      // Play the demo audio
+      const audio = new Audio("/demo-audio.mp3");
+      audio.volume = 0.5; // Set initial volume to 50%
+      audio.loop = true; // Loop the audio
+      audio.play().catch(e => console.error("Audio play error:", e));
+      
+      toast({
+        title: "Audio demo activated",
+        description: "You can now see the audio control animation."
+      });
+      
+      return;
+    }
+    
+    // For other features, request camera permission as before
     try {
       await gestureDetection.requestPermission();
       setPermissionGranted(true);
       setActiveVideoId(sectionId);
       setActiveFeature(sectionId); // Set active feature to restrict gestures
-
-      // Play an audio clip when the volume feature is activated
-      if (sectionId === "volume") {
-        const audio = new Audio("/demo-audio.mp3");
-        audio.volume = 0.5; // Set initial volume to 50%
-        audio.play().catch(e => console.error("Audio play error:", e));
-      }
 
       toast({
         title: "Camera access granted",
@@ -523,12 +535,12 @@ const Index = () => {
                 <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gradient text-center md:text-left">{section.title}</h2>
                 <p className="text-xl text-gray-300 mb-8 text-center md:text-left">{section.description}</p>
                 <Button onClick={() => {
-                  if (!permissionGranted) {
-                    requestCameraPermission(section.id);
-                  } else {
+                  if (permissionGranted && section.id !== "volume") {
                     setActiveVideoId(section.id);
                     setActiveFeature(section.id);
                     section.gestureDemo();
+                  } else {
+                    requestCameraPermission(section.id);
                   }
                 }} className={`bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 transition-all transform hover:scale-105 duration-300 ${activeFeature === section.id ? 'ring-4 ring-neon-purple' : ''}`}>
                   {activeFeature === section.id ? "Active" : "Try This Gesture"}
