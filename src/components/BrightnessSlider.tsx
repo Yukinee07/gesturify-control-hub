@@ -1,7 +1,6 @@
 
 import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { HandIcon } from './icons/HandIcon';
 
 interface BrightnessSliderProps {
   value: number;
@@ -14,7 +13,10 @@ interface BrightnessSliderProps {
 export const BrightnessSlider = ({ value, max, min, onChange, isActive }: BrightnessSliderProps) => {
   const sliderRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const normalizedValue = ((value - min) / (max - min)) * 100;
+  
+  // Ensure value doesn't go below 10%
+  const effectiveMin = Math.max(min, 10);
+  const normalizedValue = ((Math.max(value, effectiveMin) - effectiveMin) / (max - effectiveMin)) * 100;
   
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
@@ -35,10 +37,17 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
       // Convert x position to percentage
       const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
       
-      // Convert percentage to value
-      const newValue = min + (percentage / 100) * (max - min);
-      onChange(newValue);
+      // Convert percentage to value, but ensure it's at least 10%
+      const newValue = effectiveMin + (percentage / 100) * (max - effectiveMin);
+      onChange(Math.max(newValue, effectiveMin));
     }
+  };
+
+  // Calculate the brightness color - from dark to white
+  const getBrightnessColor = () => {
+    // Map normalized value (0-100) to RGB value (0-255)
+    const colorValue = Math.round(normalizedValue * 2.55);
+    return `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
   };
 
   return (
@@ -96,7 +105,7 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
           </div>
         </div>
 
-        {/* Thumb */}
+        {/* Circular slider thumb instead of hand icon */}
         <motion.div 
           className={`absolute top-1/2 -translate-y-1/2 z-10 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           animate={{ 
@@ -105,12 +114,17 @@ export const BrightnessSlider = ({ value, max, min, onChange, isActive }: Bright
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className={`w-12 h-12 flex items-center justify-center rounded-full 
-            bg-gradient-to-r from-neon-purple to-neon-pink 
-            ${isActive ? 'animate-pulse shadow-lg shadow-neon-purple/50' : ''}
-            transition-all duration-300`}
+          <div 
+            className={`w-12 h-12 flex items-center justify-center rounded-full 
+              bg-gradient-to-r from-neon-purple to-neon-pink 
+              ${isActive ? 'animate-pulse shadow-lg shadow-neon-purple/50' : ''}
+              transition-all duration-300`}
           >
-            <HandIcon className={`w-7 h-7 text-white transform transition-transform ${isActive ? 'scale-110' : ''}`} />
+            {/* Circular thumb that changes color based on brightness */}
+            <div 
+              className="w-8 h-8 rounded-full transition-colors duration-300"
+              style={{ backgroundColor: getBrightnessColor() }}
+            ></div>
           </div>
         </motion.div>
       </div>

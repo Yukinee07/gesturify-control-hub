@@ -24,6 +24,7 @@ const Index = () => {
   const [gestureStatus, setGestureStatus] = useState<{
     [key: string]: string;
   }>({});
+  // Ensure brightness doesn't go below 10%
   const [currentBrightness, setCurrentBrightness] = useState(100);
   const [currentVolume, setCurrentVolume] = useState(0.5);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
@@ -138,7 +139,6 @@ const Index = () => {
       case 'thumbRight': 
         const newBrightnessUp = Math.min(currentBrightness + 10, 150);
         setCurrentBrightness(newBrightnessUp);
-        // Remove direct brightness adjustment for the whole page
         statusUpdate = `Increasing brightness to ${Math.round(newBrightnessUp)}%`;
         setGestureStatus(prev => ({
           ...prev,
@@ -151,9 +151,9 @@ const Index = () => {
         break;
       case 'slideDown':
       case 'thumbLeft': 
-        const newBrightnessDown = Math.max(currentBrightness - 10, 50);
+        // Ensure brightness doesn't go below 10%
+        const newBrightnessDown = Math.max(currentBrightness - 10, 10);
         setCurrentBrightness(newBrightnessDown);
-        // Remove direct brightness adjustment for the whole page
         statusUpdate = `Decreasing brightness to ${Math.round(newBrightnessDown)}%`;
         setGestureStatus(prev => ({
           ...prev,
@@ -355,7 +355,8 @@ const Index = () => {
     buttonVariant: "outline",
     recommended: false
   }];
-  return <div className="min-h-screen bg-black text-white overflow-x-hidden relative">
+  return (
+    <div className="min-h-screen bg-black text-white overflow-x-hidden relative">
       {/* Custom cursor gradient - always visible */}
       <div ref={cursorRef} className="fixed pointer-events-none w-64 h-64 rounded-full bg-gradient-radial from-neon-purple/30 to-transparent -translate-x-1/2 -translate-y-1/2 z-0 blur-lg" />
 
@@ -395,7 +396,8 @@ const Index = () => {
       </div>
 
       {/* Gesture Control Sections with updated interactive components */}
-      {gestureSections.map((section, index) => <div key={section.id} id={section.id} className="min-h-screen flex items-center justify-center relative scroll-mt-16 md:px-8 px-[80px] py-[61px] my-0">
+      {gestureSections.map((section, index) => (
+        <div key={section.id} id={section.id} className="min-h-screen flex items-center justify-center relative scroll-mt-16 md:px-8 px-[80px] py-[61px] my-0">
           <div className="container mx-auto rounded-xl py-5 feature-box-container hover:feature-box-glow">
             <div className={`flex flex-col md:flex-row items-center ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} gap-16 p-8`}>
               <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
@@ -433,13 +435,15 @@ const Index = () => {
                     <div className="relative z-10 flex items-center justify-center h-full w-full">
                       <BrightnessSlider 
                         value={currentBrightness} 
-                        min={50} 
+                        min={10} 
                         max={150} 
                         onChange={(newValue) => {
-                          setCurrentBrightness(newValue);
+                          // Ensure brightness doesn't go below 10%
+                          const adjustedValue = Math.max(newValue, 10);
+                          setCurrentBrightness(adjustedValue);
                           
                           // Update status
-                          const statusUpdate = `${newValue > currentBrightness ? 'Increasing' : 'Decreasing'} brightness to ${Math.round(newValue)}%`;
+                          const statusUpdate = `${adjustedValue > currentBrightness ? 'Increasing' : 'Decreasing'} brightness to ${Math.round(adjustedValue)}%`;
                           setGestureStatus(prev => ({
                             ...prev,
                             brightness: statusUpdate
@@ -449,12 +453,12 @@ const Index = () => {
                       />
                     </div>
                     
-                    {(activeGesture && section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor) && <div className="absolute bottom-2 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
+                    {(activeGesture && section.gestureType.includes(activeGesture as any) || trackBrightnessWithCursor) && (
+                      <div className="absolute bottom-2 left-0 right-0 text-center bg-black/50 py-1 px-2 mx-2 rounded text-sm">
                         {trackBrightnessWithCursor ? section.instructions : section.status}
-                      </div>}
+                      </div>
+                    )}
                   </div>
-                ) : section.id === "volume" ? (
-                  <AudioPlayer isActive={section.gestureType.includes(activeGesture as any)} />
                 ) : (
                   <div className={`feature-box neo-blur rounded-xl w-full max-w-md aspect-video flex items-center justify-center transition-all duration-500 ${section.gestureType.includes(activeGesture as any) ? 'ring-4 ring-neon-purple scale-105' : ''}`}>
                     <div className="text-center p-8 w-full">
@@ -486,7 +490,8 @@ const Index = () => {
               </div>
             </div>
           </div>
-        </div>)}
+        </div>
+      ))}
 
       {/* Custom Gesture Tool Section */}
       <div id="custom-gestures" className="min-h-screen flex items-center justify-center relative scroll-mt-16 py-24 px-4 md:px-8 bg-transparent">
@@ -620,7 +625,15 @@ const Index = () => {
           50% { filter: brightness(1.3); }
           100% { filter: brightness(1); }
         }
+
+        /* Add animation for thumbs pulse */
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 0.8; }
+          100% { transform: scale(1.1); opacity: 1; }
+        }
       `}</style>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
